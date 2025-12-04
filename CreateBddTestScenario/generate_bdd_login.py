@@ -10,7 +10,8 @@ from langchain_community.document_loaders import UnstructuredPDFLoader
 
 # ⭐ Recommended: DeepSeek Cloud – fastest + highest quality ⭐
 deepseekcloud_llm = ChatOllama(
-    model="deepseek-v3.1:671b-cloud",
+    #model="deepseek-v3.1:671b-cloud",
+    model="gpt-oss:120b-cloud",
     base_url="http://localhost:11434",
     temperature=0.5
 )
