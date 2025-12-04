@@ -1,0 +1,157 @@
+import { Page, Locator, expect } from '@playwright/test';
+
+export class LoginpomPage {
+    readonly page: Page;
+    readonly usernameInput: Locator;
+    readonly passwordInput: Locator;
+    readonly loginButton: Locator;
+    readonly loginTitle: Locator;
+    readonly forgotPasswordLink: Locator;
+    readonly demoCredentialsSection: Locator;
+    readonly demoUsernameText: Locator;
+    readonly demoPasswordText: Locator;
+    readonly companyBranding: Locator;
+    readonly linkedinIcon: Locator;
+    readonly facebookIcon: Locator;
+    readonly twitterIcon: Locator;
+    readonly youtubeIcon: Locator;
+    readonly copyrightText: Locator;
+    readonly versionText: Locator;
+
+    constructor(page: Page) {
+        this.page = page;
+        this.usernameInput = page.locator('input[name="username"]');
+        this.passwordInput = page.locator('input[name="password"]');
+        this.loginButton = page.locator('button[type="submit"]');
+        this.loginTitle = page.locator('h5.orangehrm-login-title');
+        this.forgotPasswordLink = page.locator('p.orangehrm-login-forgot-header');
+        this.demoCredentialsSection = page.locator('div.orangehrm-demo-credentials');
+        this.demoUsernameText = page.locator('p.oxd-text--p:has-text("Username : Admin")');
+        this.demoPasswordText = page.locator('p.oxd-text--p:has-text("Password : admin123")');
+        this.companyBranding = page.locator('img[alt="company-branding"]');
+        this.linkedinIcon = page.locator('a[href*="linkedin"]');
+        this.facebookIcon = page.locator('a[href*="facebook"]');
+        this.twitterIcon = page.locator('a[href*="twitter"]');
+        this.youtubeIcon = page.locator('a[href*="youtube"]');
+        this.copyrightText = page.locator('p.orangehrm-copyright:has-text("All rights reserved")');
+        this.versionText = page.locator('p.orangehrm-copyright:has-text("OrangeHRM OS")');
+    }
+
+    async goto(url: string): Promise<void> {
+        await this.page.goto(url);
+    }
+
+    async waitForPageLoad(): Promise<void> {
+        await this.page.waitForLoadState('networkidle');
+    }
+
+    async fillUsername(username: string): Promise<void> {
+        await this.usernameInput.fill(username);
+    }
+
+    async fillPassword(password: string): Promise<void> {
+        await this.passwordInput.fill(password);
+    }
+
+    async clickLogin(): Promise<void> {
+        await this.loginButton.click();
+    }
+
+    async clickForgotPassword(): Promise<void> {
+        await this.forgotPasswordLink.click();
+    }
+
+    async login(username: string, password: string): Promise<void> {
+        await this.fillUsername(username);
+        await this.fillPassword(password);
+        await this.clickLogin();
+    }
+
+    async loginWithDemoCredentials(): Promise<void> {
+        await this.login('Admin', 'admin123');
+    }
+
+    async verifyLoginTitleVisible(): Promise<void> {
+        await expect(this.loginTitle).toBeVisible();
+    }
+
+    async verifyLoginTitleText(): Promise<void> {
+        await expect(this.loginTitle).toHaveText('Login');
+    }
+
+    async verifyUsernameInputVisible(): Promise<void> {
+        await expect(this.usernameInput).toBeVisible();
+    }
+
+    async verifyPasswordInputVisible(): Promise<void> {
+        await expect(this.passwordInput).toBeVisible();
+    }
+
+    async verifyLoginButtonVisible(): Promise<void> {
+        await expect(this.loginButton).toBeVisible();
+    }
+
+    async verifyLoginButtonEnabled(): Promise<void> {
+        await expect(this.loginButton).toBeEnabled();
+    }
+
+    async verifyDemoCredentialsVisible(): Promise<void> {
+        await expect(this.demoCredentialsSection).toBeVisible();
+    }
+
+    async verifyCompanyBrandingVisible(): Promise<void> {
+        await expect(this.companyBranding).toBeVisible();
+    }
+
+    async verifySocialIconsVisible(): Promise<void> {
+        await expect(this.linkedinIcon).toBeVisible();
+        await expect(this.facebookIcon).toBeVisible();
+        await expect(this.twitterIcon).toBeVisible();
+        await expect(this.youtubeIcon).toBeVisible();
+    }
+
+    async verifyCopyrightVisible(): Promise<void> {
+        await expect(this.copyrightText).toBeVisible();
+        await expect(this.versionText).toBeVisible();
+    }
+
+    async getUsernamePlaceholder(): Promise<string> {
+        return await this.usernameInput.getAttribute('placeholder') || '';
+    }
+
+    async getPasswordPlaceholder(): Promise<string> {
+        return await this.passwordInput.getAttribute('placeholder') || '';
+    }
+
+    async getLoginButtonText(): Promise<string> {
+        return await this.loginButton.textContent() || '';
+    }
+
+    async getForgotPasswordText(): Promise<string> {
+        return await this.forgotPasswordLink.textContent() || '';
+    }
+
+    async isUsernameInputEnabled(): Promise<boolean> {
+        return await this.usernameInput.isEnabled();
+    }
+
+    async isPasswordInputEnabled(): Promise<boolean> {
+        return await this.passwordInput.isEnabled();
+    }
+
+    async clearUsername(): Promise<void> {
+        await this.usernameInput.clear();
+    }
+
+    async clearPassword(): Promise<void> {
+        await this.passwordInput.clear();
+    }
+
+    async getDemoUsernameText(): Promise<string> {
+        return await this.demoUsernameText.textContent() || '';
+    }
+
+    async getDemoPasswordText(): Promise<string> {
+        return await this.demoPasswordText.textContent() || '';
+    }
+}

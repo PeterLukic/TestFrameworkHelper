@@ -1,0 +1,34 @@
+
+Parsed OrangeHRM Login Page Elements
+
+Element Purpose | Type | Locator (CSS) | Suggested POM Property
+----------------|------|---------------|------------------------
+Company branding image | <img> | img[alt="company-branding"] | companyBrandingImage
+Logo image | <img> | img[alt="orangehrm-logo"] | logoImage
+Login title ("Login") | <h5> | h5.orangehrm-login-title | loginTitle
+Demo username text ("Username : Admin") | <p> | .orangehrm-demo-credentials p:nth-of-type(1) | demoUsernameText
+Demo password text ("Password : admin123") | <p> | .orangehrm-demo-credentials p:nth-of-type(2) | demoPasswordText
+Username input field | <input> | input[name="username"] | usernameInput
+Password input field | <input type="password"> | input[name="password"] | passwordInput
+Login button | <button> | .orangehrm-login-button | loginButton
+"Forgot your password?" link/text | <p> | .orangehrm-login-forgot-header | forgotPasswordText
+LinkedIn icon/link | <a> | a[href*="linkedin.com"] | linkedinLink
+Facebook icon/link | <a> | a[href*="facebook.com"] | facebookLink
+Twitter icon/link | <a> | a[href*="twitter.com"] | twitterLink
+YouTube icon/link | <a> | a[href*="youtube.com"] | youtubeLink
+Copyright line (OrangeHRM OS 5.7) | <p> | .orangehrm-copyright | copyrightText
+OrangeHRM site link | <a> | a[href="http://www.orangehrm.com"] | orangeHRMSiteLink
+
+Suggested POM Actions:
+
+Method Purpose | Description
+---------------|-------------
+openLoginPage() | Navigates to login URL
+enterUsername(username) | Fills in username field
+enterPassword(password) | Fills in password field
+clickLogin() | Clicks login button
+verifyLoginPageLoaded() | Asserts presence of logo and login title
+verifyErrorDisplayed() | Checks for login error (if visible)
+clickForgotPassword() | Clicks on “Forgot your password?” link
+verifyCopyright() | Checks copyright text
+openSocialLink(linkName) | Opens social link (LinkedIn, Facebook, etc.)
