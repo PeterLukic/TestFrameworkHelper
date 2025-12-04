@@ -13,6 +13,8 @@ Before you start, make sure you have:
 - **pip** (comes with Python by default)
 - **Git** (optional, for version control)
 - **Visual Studio Code** or **PyCharm** (recommended IDE)
+- **Ollama** running locally at `http://localhost:11434`  
+  👉 [Download from ollama.com](https://ollama.com/)
 
 ---
 
@@ -50,27 +52,84 @@ python -m pip install --upgrade pip
 
 ## 4️⃣ Install Required Packages
 
-We’ll keep all dependencies in a `requirements.txt` file located in the project root.  
-For now, install the initial set of packages manually:
+### Core Dependencies
+
+Install the main packages needed for the project:
+
+```bash
+pip install langchain langchain-core langchain-ollama langchain-community langchain-anthropic
+```
+
+### Document Processing
+
+For reading and processing PDF files:
+
+```bash
+pip install unstructured
+```
+
+### Testing Framework (Optional)
+
+If you plan to use pytest for testing:
 
 ```bash
 pip install pytest pytest-bdd pydantic playwright requests python-dotenv
 ```
 
-Later, we’ll add:
-- `pytest-html` or `allure-pytest` → for reports  
-- `selenium` or `playwright` → for browser automation  
-- `ollama` API integration packages → for LLM features  
+### Jupyter Notebook Support (Optional)
 
-To freeze your environment:
+If you want to use Jupyter notebooks:
+
+```bash
+pip install notebook ipykernel
+```
+
+---
+
+## 5️⃣ Install Ollama Models
+
+After installing Ollama, pull the required models:
+
+```bash
+ollama pull qwen2.5
+ollama pull llama3.2
+ollama pull gemma3:12b
+ollama pull deepseek-v3.1:671b-cloud
+ollama pull gpt-oss:120b-cloud
+ollama pull embeddinggemma
+```
+
+---
+
+## 6️⃣ Set Up Anthropic API Key (Optional)
+
+If you want to use Claude AI, create a `.env` file in the project root:
+
+```bash
+ANTHROPIC_API_KEY=your_api_key_here
+```
+
+Or set it directly in your scripts (as shown in the notebooks).
+
+---
+
+## 7️⃣ Create requirements.txt
+
+Save all dependencies to a file:
 
 ```bash
 pip freeze > requirements.txt
 ```
 
+To install from `requirements.txt` later:
+
+```bash
+pip install -r requirements.txt
+```
+
 ---
 
-## 5️⃣ Verify Installation
+## 8️⃣ Verify Installation
 
 Run Python:
 
@@ -78,15 +137,49 @@ Run Python:
 python --version
 ```
 
-Run pytest (should show no errors):
+Test LangChain import:
 
 ```bash
-pytest --version
+python -c "from langchain_ollama import ChatOllama; print('✅ LangChain installed successfully')"
+```
+
+Test Unstructured import:
+
+```bash
+python -c "from langchain_community.document_loaders import UnstructuredPDFLoader; print('✅ Unstructured installed successfully')"
 ```
 
 ---
 
-## 6️⃣ Deactivate Environment
+## 9️⃣ Project Structure
+
+Ensure your project has the following structure:
+
+```
+TestFrameworkHelper/
+├── .venv/                          # Virtual environment
+├── CreateBddTestScenario/
+│   ├── Docs/
+│   │   └── LoginDocumentation.pdf  # Your PDF requirements
+│   ├── BddTestCaseCreator.ipynb
+│   ├── generate_bdd_from_pdf.py
+│   └── generate_bdd_login.py
+├── CreatePomPattern/
+│   ├── Docs/
+│   │   ├── LoginPom.txt
+│   │   └── ParsedLoginPage.txt
+│   ├── PomCreator.ipynb
+│   ├── pom_creator.py
+│   └── Generated_LoginpomPage.ts
+├── Installation/
+│   └── INSTALLATION.md             # This file
+├── .gitignore
+└── requirements.txt
+```
+
+---
+
+## 🔟 Deactivate Environment
 
 When done:
 
@@ -102,5 +195,54 @@ To reactivate later, run:
 
 ---
 
-✅ **Next step:**  
-After finishing these steps, we’ll create the folder structure and basic `README.md` with project goals.
+## 📦 Complete Package List
+
+Here's the full list of packages used in this project:
+
+### LLM & LangChain Integration
+- `langchain` - Core LangChain library
+- `langchain-core` - Core components
+- `langchain-ollama` - Ollama LLM integration
+- `langchain-community` - Community tools (document loaders)
+- `langchain-anthropic` - Claude AI integration (optional)
+
+### Document Processing
+- `unstructured` - PDF and document processing
+
+### Testing (Optional)
+- `pytest` - Testing framework
+- `pytest-bdd` - BDD testing
+- `pydantic` - Data validation
+- `playwright` - Browser automation
+- `requests` - HTTP library
+- `python-dotenv` - Environment variables
+
+### Development Tools (Optional)
+- `notebook` - Jupyter notebook support
+- `ipykernel` - Jupyter kernel
+
+---
+
+## 🚀 Quick Start
+
+After installation, you can run:
+
+**Generate BDD test cases from PDF:**
+```bash
+python CreateBddTestScenario/generate_bdd_login.py
+```
+
+**Generate POM pattern from HTML:**
+```bash
+python CreatePomPattern/pom_creator.py
+```
+
+**Run Jupyter notebooks:**
+```bash
+jupyter notebook
+```
+
+---
+
+✅ **You're all set!**  
+Your TestFrameworkHelper environment is ready for BDD test generation and POM pattern creation.
