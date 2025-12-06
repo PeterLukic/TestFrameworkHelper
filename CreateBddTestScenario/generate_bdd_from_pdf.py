@@ -5,35 +5,18 @@ from langchain_core.prompts import PromptTemplate
 from langchain_community.document_loaders import UnstructuredPDFLoader
 
 # Initialize LLMs
-qwen_llm = ChatOllama(
-    model="qwen2.5", 
-    base_url="http://localhost:11434", 
-    temperature=0.5
+
+# ---------------------------------------------------------
+# LLM MODELS
+# ---------------------------------------------------------
+draft_model = ChatOllama(
+    model="gpt-oss:120b-cloud",
+    temperature=0.3
 )
 
-embedding_llm  = ChatOllama(
-    model="embeddinggemma", 
-    base_url="http://localhost:11434", 
-    temperature=0.5
-)
-
-llama_llm = ChatOllama(
-    model="llama3.2:latest",        
-    base_url="http://localhost:11434",
-    temperature=0.5
-)
-
-gemma312_llm = ChatOllama(
-    model="gemma3:12b",        
-    base_url="http://localhost:11434",
-    temperature=0.5
-)
-
-
-deepseekcloud_llm = ChatOllama(
-    model="deepseek-v3.1:671b-cloud",        
-    base_url="http://localhost:11434",
-    temperature=0.5
+refine_model = ChatOllama(
+    model="deepseek-v3.1:671b-cloud",
+    temperature=0.2
 )
 
 
@@ -72,7 +55,7 @@ def generate_bdd_test_cases_from_pdf(user_story: str) -> str:
     )
 
     prompt = prompt_template.format(requirements_text=requirements_text)
-    response = gemma312_llm.invoke(prompt)
+    response = draft_model.invoke(prompt)
 
     if hasattr(response, 'content'):
         return response.content
@@ -114,7 +97,7 @@ def generate_single_bdd_test_case_from_pdf(user_story: str) -> str:
     )
 
     prompt = prompt_template.format(requirements_text=requirements_text)
-    response = deepseekcloud_llm.invoke(prompt)
+    response = refine_model.invoke(prompt)
 
     if hasattr(response, 'content'):
         return response.content
