@@ -1,0 +1,78 @@
+Feature: OrangeHRM Login Functionality
+
+Scenario: Successful login with valid credentials
+    Given I open the website
+    And I enter the username "<username>"
+    And I enter the password "<password>"
+    When I click on "Login"
+    Then I should be redirected to the dashboard
+
+Scenario: Login attempt with invalid username
+    Given I open the website
+    And I enter the username "<invalid_username>"
+    And I enter the password "<password>"
+    When I click on "Login"
+    Then I should see an error message "Invalid credentials"
+
+Scenario: Login attempt with invalid password
+    Given I open the website
+    And I enter the username "<username>"
+    And I enter the password "<invalid_password>"
+    When I click on "Login"
+    Then I should see an error message "Invalid credentials"
+
+Scenario: Login attempt with both username and password invalid
+    Given I open the website
+    And I enter the username "<invalid_username>"
+    And I enter the password "<invalid_password>"
+    When I click on "Login"
+    Then I should see an error message "Invalid credentials"
+
+Scenario: Login attempt with empty username
+    Given I open the website
+    And I enter the username "<empty_username>"
+    And I enter the password "<password>"
+    When I click on "Login"
+    Then I should see a validation message "Username is required"
+
+Scenario: Login attempt with empty password
+    Given I open the website
+    And I enter the username "<username>"
+    And I enter the password "<empty_password>"
+    When I click on "Login"
+    Then I should see a validation message "Password is required"
+
+Scenario: Login attempt with both username and password empty
+    Given I open the website
+    And I enter the username "<empty_username>"
+    And I enter the password "<empty_password>"
+    When I click on "Login"
+    Then I should see validation messages "Username is required" and "Password is required"
+
+
+Feature: OrangeHRM Login Page Elements
+
+Scenario: Verify presence of Username field placeholder
+    Given I open the website
+    Then the Username field should display placeholder "Username"
+
+Scenario: Verify presence of Password field placeholder
+    Given I open the website
+    Then the Password field should display placeholder "Password"
+
+
+Scenario: Verify presence of Login button
+    Given I open the website
+    Then a button with text "Login" should be displayed
+
+Scenario: Verify presence of Forgot Password link
+    Given I open the website
+    Then a link with text "Forgot your password?" should be displayed
+
+Scenario: Verify presence of social media links
+    Given I open the website
+    Then links for LinkedIn, Facebook, Twitter, and YouTube should be displayed
+
+Scenario: Verify that JavaScript is required for login functionality
+    Given I open the website with JavaScript disabled
+    Then the login form should not be functional and an appropriate warning should be shown
