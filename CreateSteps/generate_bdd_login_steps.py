@@ -6,10 +6,11 @@ from langchain_ollama import ChatOllama
 # ---------------------------------------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DOCS_DIR = os.path.join(BASE_DIR, "Docs")
+STEPS_DIR = os.path.join(BASE_DIR, "Steps")
 
 BDD_FILE = os.path.join(DOCS_DIR, "BddLoginScenario.txt")
 POM_FILE = os.path.join(DOCS_DIR, "PomLogin.txt")
-OUTPUT_FILE = os.path.join(DOCS_DIR, "GeneratedLoginSteps.ts")
+OUTPUT_FILE = os.path.join(STEPS_DIR, "GeneratedLoginSteps.ts")
 
 # ---------------------------------------------------------
 # Load input files
@@ -41,35 +42,58 @@ refine_model = ChatOllama(
 # ---------------------------------------------------------
 
 DRAFT_PROMPT = f"""
-You are an expert QA Automation architect.
+You are an expert QA automation architect.
 
-Using the following BDD scenario and POM description, generate a CLEAN, RAW draft of Playwright BDD step definitions.
+Using the following BDD scenario and POM description, generate a CLEAN minimal draft
+of Playwright Cucumber step definitions.
 
-DO NOT format as explanations — ONLY produce the step logic.
+RULES:
+- Do NOT invent any POM methods
+- Use ONLY methods that exist in the provided POM
+- Do NOT generate imports
+- Do NOT generate descriptions or explanations
+- Only output raw step logic (When / Then / Given blocks)
 
 --- BDD ---
 {bdd_content}
 
 --- POM ---
 {pom_content}
-
-Generate only the draft step definitions with correct method names, but NO project structure and NO imports.
 """
 
 REFINE_PROMPT_TEMPLATE = """
-import {{ When, Then }} from '../../support/fixtures';
+You are an expert TS Playwright architect.
+
+Rewrite the following RAW draft step definitions into FINAL Cucumber step definitions
+that exactly match this project structure:
+
+REQUIREMENTS:
+- Import steps EXACTLY like this:
+
+import {{ When, Then, Given }} from '../../support/fixtures';
 import {{ PageManager }} from '../../../pageobjects/PageManager';
-import {{ PageLogin }} from '../../../pageobjects/PageLogin';
+import {{ LoginpomPage }} from '../../../pageobjects/LoginpomPage';
 import data from '../../../utils/data.json';
 
-type FixtureContext = {{
-    pageManager: PageManager;
-}};
+- Use fixture context: 
+  type FixtureContext = {{
+      pageManager: PageManager;
+  }};
 
-// Steps will be generated below:
+- Page reference MUST be:
+  const pageLogin = (pm: PageManager): LoginpomPage => pm.getLoginPage();
+
+- Use ONLY methods existing in the POM provided earlier.
+
+- Steps MUST be production-ready, strict, typed, valid TS.
+
+INSERT THE DRAFT STEPS HERE:
+-----------------------------------
 {draft}
-"""
+-----------------------------------
 
+NOW produce the final Playwright BDD steps with imports, typing, and correct POM calls.
+"""
 
 # ---------------------------------------------------------
 # RUN PIPELINE
@@ -86,6 +110,8 @@ final_steps = final_result.content.strip()
 # ---------------------------------------------------------
 # SAVE OUTPUT
 # ---------------------------------------------------------
+os.makedirs(STEPS_DIR, exist_ok=True)
+
 with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
     f.write(final_steps)
 
