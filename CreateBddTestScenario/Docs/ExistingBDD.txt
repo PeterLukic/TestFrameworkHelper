@@ -1,0 +1,198 @@
+Feature: Add new admin user in OrangeHRM
+  As an admin user
+  I want to add a new user in the system
+  So that I can manage user accounts
+
+  Background:
+    Given I navigate to the OrangeHRM login page
+    And the login page is loaded successfully
+	
+	
+  @ui @addRandomUser @positive
+  Scenario: Add a new random admin user with valid credentials
+    When I login with the demo credentials
+    Then I should be redirected to the page dashboard
+    Given I navigate to the Admin User Management page
+    And I click the Add User button
+    And I add a new admin user with random data
+    Then I should be redirected to the page admin user managment
+    And I fill the username input field with New Randndom User
+    And I click the Search button
+    Then I verify If random user is added   
+
+  @ui @addDeleteNewUser @positive
+  Scenario: Add and Delete new admin user with valid credentials
+    When I login with the demo credentials
+    Then I should be redirected to the page dashboard
+    Given I navigate to the Admin User Management page
+    And I fill the username input field with "Perica"
+    And I click the Search button
+    Then I should see a message indicating that no records were found
+    And I click the Add User button
+    And I select "Admin" as the new user role
+    And I enter "T" as the new first suggestion employee name
+    And I select "Enabled" as the new status
+    And I enter new username from data json file
+    And I enter new password from data json file
+    And I confirm new password from data json file
+    And I click the Save button
+    Then I should be redirected to the page admin user managment
+    And I fill the username input field with "Perica"
+    And I click the Search button
+    Then I verify that the search result contains:
+      | username | Perica  |
+      | userRole | Admin   |
+      | status   | Enabled |
+    Then I click the checkbox for user "Perica"
+    And I click the Delete Selected button
+    Then I confirm the deletion in the dialog
+    And I fill the username input field with "Perica"
+    And I click the Search button
+    Then I should see a message indicating that no records were found
+	
+	
+Feature: Admin User Management
+  As an admin user
+  I want to manage users in the system
+  So that I can add, search, and reset user information
+
+  Background:
+    Given I navigate to the OrangeHRM login page
+    And the login page is loaded successfully
+
+  @ui @search @positive
+  Scenario: Search for a user by username and employee name
+    When I login with the demo credentials
+    Then I should be redirected to the page dashboard
+    Given I navigate to the Admin User Management page
+    And I fill the username input field with "Admin"
+    And I select "Admin" as the user role
+
+    And I select "Enabled" as the status
+    And I click the Search button
+    Then I verify that the search result contains:
+      | username     | Admin       |
+      | userRole     | Admin       |
+      | status       | Enabled     |
+
+
+Feature: OrangeHRM Login
+  As a user of OrangeHRM system
+  I want to be able to login to the application
+  So that I can access the HR management features
+
+  Background:
+    Given I navigate to the OrangeHRM login page
+    And the login page is loaded successfully
+
+  @ui @smoke @positive
+  Scenario: Successful login with valid credentials
+    When I enter valid username
+    And I enter valid password
+    And I click the login button
+    Then I should be redirected to the page dashboard
+
+  @ui @smoke @positive
+  Scenario: Login with demo credentials
+    When I login with the demo credentials
+    Then I should be redirected to the page dashboard
+
+  @ui @negative
+  Scenario: Login with invalid username
+    When I enter username "InvalidUser"
+    And I enter password "admin123"
+    And I click the login button
+    Then I should see an error message
+	
+	
+Feature: Book Sign-In Page Scenarios
+  
+    @UserLogin 
+    Scenario: Users can log in
+        Given I navigate to the book sign-in page
+        And I sign in with valid credentials
+        Then I verify that login was successful
+		
+Feature: Book Sign-Up Page Scenarios
+
+  @UserRegisterAndLogin
+  Scenario: Users can log in with registered credentials
+    Given I am on the book store sign-up page
+    When I register with random user data
+    Given I navigate to the book sign-in page
+    And I sign in using the registered email and password
+    Then I should see my profile details matching the registered data
+	
+Feature: Book shoopping card page scenarios
+  
+  @PurchaseBook
+  Scenario: Users can use fake/demo credit cards provided at the checkout page
+    Given I navigate to the book sign-in page
+    And I sign in with valid credentials
+    Then I verify that login was successful
+    When I navigate to the book listing page
+    And I select a book by title
+    And I add the book to the shopping cart
+    And I proceed to the checkout page
+    Then I should see the checkout page with the book title and price
+    When I click on the Proceed To Checkout button
+    And I fill in the checkout form with demo credit card details
+    And I confirm the purchase
+    Then I should see an order confirmation message
+    And I should see the order in my profile with the correct title and price
+	
+Feature: Book Profile Page Scenarios
+
+  @CheckOrders
+  Scenario: Users can check previous orders
+    Given I navigate to the book sign-in page
+    And I sign in with valid credentials
+    When I open my profile or order history page
+    Then I should see the details of my previous orders
+
+  @LogOut
+  Scenario: Users can log out
+    Given I navigate to the book sign-in page
+    And I sign in with valid credentials
+    When I log out of my account
+    Then I should be redirected to the sign-in page
+	
+Feature: Book List Page Scenarios
+
+  @BookListingDisplay
+  Scenario: Displays a list of books with titles and prices
+    Given I navigate to the book listing page
+    Then I should see a list of books with their titles and prices
+
+  @BookSearch
+  Scenario: Allows book filtering by keywords (Basic search)
+    Given I navigate to the book listing page
+    When I search for a book by title
+    Then I should see the book in the search results with its title and price
+
+  @BookSorting
+  Scenario: Allows sorting books by price (ascending and descending)
+    Given I navigate to the book listing page
+    When I sort books by price in "ascending" order
+    Then the books should be displayed in "ascending" price order
+    When I sort books by price in "descending" order
+    Then the books should be displayed in "descending" price order
+	
+Feature: Book Details Page Scenarios        
+ 
+  @BookDisplay
+  Scenario: The detailed page displays the book's title, price, and description
+    Given I navigate to the book listing page
+    When I select a book by title
+    Then I should see the book details including title, price, and description
+	
+
+
+
+
+
+
+
+
+
+

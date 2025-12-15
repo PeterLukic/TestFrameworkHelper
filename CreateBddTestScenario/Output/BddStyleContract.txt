@@ -1,0 +1,51 @@
+**STEP WORDING**  
+- Use present‑tense, imperative verbs for actions (e.g., “navigate to …”, “click …”, “enter …”, “select …”, “fill …”, “verify …”).  
+- Prefix every step with a single keyword: **Given**, **When**, **Then**, **And**, or **But**.  
+- Do not embed multiple actions in one step; split into separate steps.  
+- Keep step text concise; avoid filler words (“I”, “the”, “a”) unless required for clarity.  
+
+**GIVEN / WHEN / THEN USAGE**  
+- **Given** : Establish pre‑conditions, context, or system state. Must appear before any **When** in a scenario.  
+- **When** : Describe the single primary event or user interaction under test. Only one **When** per scenario; additional actions belong to **And** after the **When**.  
+- **Then** : State the expected outcome, observable result, or system response. At least one **Then** must follow the **When**.  
+- **And/But** : Extend the most recent **Given**, **When**, or **Then**. Do not start a scenario with **And/But**.  
+
+**REUSABILITY PRINCIPLES**  
+- Write steps as generic, parameter‑driven phrases (e.g., “fill the *<field>* input field with *<value>*”).  
+- Use data tables only for verification or bulk input; never for action verbs.  
+- Keep step definitions independent of specific UI labels; refer to logical identifiers (e.g., “user role”, “status”).  
+- Group common pre‑conditions in a **Background** block; avoid duplicating them in individual scenarios.  
+- Tag scenarios with functional tags only (e.g., @ui, @smoke, @negative); do not embed business logic in tags.  
+
+**NAMING CONVENTIONS**  
+- Feature titles: “<Capability> – <Brief description>” (title case, no periods).  
+- Scenario titles: Action‑oriented, start with a verb, use sentence case, no trailing punctuation.  
+- Step parameters: Use lowerCamelCase for placeholders (e.g., *<username>*, *<pageName>*).  
+- Tags: Lowercase, prefixed with “@”, single word or hyphenated (e.g., @add‑user, @search‑positive).  
+- Data tables: Header names in lowerCamelCase, matching step parameter names.  
+
+**WHAT TO AVOID**  
+- Mixing **Given**, **When**, **Then** order (e.g., placing **Then** before **When**).  
+- Combining verification and action in the same step (e.g., “click and verify”).  
+- Using ambiguous pronouns (“it”, “this”) without a clear referent.  
+- Hard‑coding UI text that may change (e.g., exact button labels) – use semantic identifiers.  
+- Repeating identical steps consecutively; consolidate with **And**.  
+- Including implementation details (e.g., “wait 5 seconds”, “use XPath …”).  
+
+**SCENARIO STRUCTURE**  
+1. **Feature** block with a clear business value statement.  
+2. Optional **Background** containing only **Given** steps common to all scenarios.  
+3. **Scenario** (or **Scenario Outline**) with:  
+   - One or more **Given** steps (pre‑conditions).  
+   - Exactly one **When** step (primary action).  
+   - Zero or more **And** steps extending the **When** if needed.  
+   - One or more **Then** steps (assertions).  
+   - Optional **And** steps extending each **Then** for additional assertions.  
+4. End of scenario: no stray steps; every step must belong to a **Given**, **When**, or **Then** block.  
+
+**GENERAL RULES**  
+- Keep each scenario atomic: test one behavior per scenario.  
+- Use **Scenario Outline** with **Examples** when the same steps are executed with multiple data sets.  
+- Maintain consistent indentation and line breaks for readability.  
+- Do not place tags inside step text; tags belong only to Feature, Background, or Scenario lines.  
+- Ensure every step can be mapped to a single, reusable step definition.

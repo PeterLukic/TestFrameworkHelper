@@ -1,119 +1,123 @@
 # file: generate_bdd_from_pdf.py
 
+import os
 from langchain_ollama import ChatOllama
-from langchain_core.prompts import PromptTemplate
 from langchain_community.document_loaders import UnstructuredPDFLoader
 
-# Initialize LLMs
+# ---------------------------------------------------------
+# PATHS
+# ---------------------------------------------------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DOCS_DIR = os.path.join(BASE_DIR, "Docs")
+
+PDF_FILE = os.path.join(DOCS_DIR, "LoginDocumentation.pdf")
 
 # ---------------------------------------------------------
 # LLM MODELS
 # ---------------------------------------------------------
+
+# Model 1 → Extract & normalize requirements
 draft_model = ChatOllama(
     model="gpt-oss:120b-cloud",
     temperature=0.3
 )
 
+# Model 2 → Enforce strict BDD style contract
 refine_model = ChatOllama(
     model="deepseek-v3.1:671b-cloud",
     temperature=0.2
 )
 
+# ---------------------------------------------------------
+# UNIVERSAL BDD PROMPT (YOUR CONTRACT)
+# ---------------------------------------------------------
+BDD_STYLE_PROMPT = """
+You are a Behavior-Driven Development (BDD) expert.
+Generate high-quality Gherkin scenarios following the STRICT style contract below.
+Apply these rules consistently.
 
-def generate_bdd_test_cases_from_pdf(user_story: str) -> str:
-    """
-    📄 Reads requirements from a specific PDF file and generates comprehensive 
-    BDD test scenarios in Gherkin format.
-    Includes valid, invalid, edge case, and alternative flows.
-    """
-    pdf_file = "./Docs/LoginDocumentation.pdf"
+================ STYLE CONTRACT ================
+
+- Use present-tense, imperative verbs
+- One action per step
+- Exactly one When per scenario
+- Given → When → Then order only
+- No UI implementation details
+- Use semantic identifiers
+- Use Background for shared Given steps
+- Prefer Scenario Outline + Examples for data-driven flows
+- Steps must be reusable and automation-ready
+
+================ REQUIREMENTS ==================
+
+{requirements}
+
+================ OUTPUT ==================
+
+Generate COMPLETE Gherkin feature files.
+"""
+
+# ---------------------------------------------------------
+# STEP 1: READ PDF
+# ---------------------------------------------------------
+def load_requirements_from_pdf() -> str:
+    if not os.path.exists(PDF_FILE):
+        raise FileNotFoundError(f"Missing PDF file: {PDF_FILE}")
+
     loader = UnstructuredPDFLoader(
-        file_path=pdf_file,
-        languages=["eng"]  # preferred parameter for OCR
-    )
-    docs = loader.load()
-
-    requirements_text = "\n\n".join([doc.page_content.strip() for doc in docs])[:2000]
-
-    prompt_template = PromptTemplate.from_template(
-        """
-        You are a QA Automation Engineer. 
-        Your task is to convert the following user story into ALL possible test cases 
-        in Gherkin BDD style format.
-        Include valid, invalid, edge case, and alternative flow scenarios.
-
-        {requirements_text}
-
-        Format your response as:
-        Feature: [Feature name]
-
-        Scenario: [Scenario name]
-            Given [precondition]
-            When [action]
-            Then [expected result]
-        """
-    )
-
-    prompt = prompt_template.format(requirements_text=requirements_text)
-    response = draft_model.invoke(prompt)
-
-    if hasattr(response, 'content'):
-        return response.content
-    else:
-        return str(response)
-
-
-def generate_single_bdd_test_case_from_pdf(user_story: str) -> str:
-    """
-    📄 Reads requirements from a specific PDF file and generates a single 
-    BDD test scenario in Gherkin format.
-    Includes a combination of valid, invalid, edge case, or alternative flows.
-    """
-    pdf_file = "./Docs/LoginDocumentation.pdf"
-    loader = UnstructuredPDFLoader(
-        file_path=pdf_file,
+        file_path=PDF_FILE,
         languages=["eng"]
     )
+
     docs = loader.load()
 
-    requirements_text = "\n\n".join([doc.page_content.strip() for doc in docs])[:2000]
+    raw_text = "\n\n".join(doc.page_content.strip() for doc in docs)
 
-    prompt_template = PromptTemplate.from_template(
-        """
-        You are a QA Automation Engineer. 
-        Your task is to convert the following user story into ONLY ONE test case 
-        in Gherkin BDD style format. 
+    # Keep prompt-safe size
+    return raw_text[:3000]
 
-        {requirements_text}
+# ---------------------------------------------------------
+# STEP 2: NORMALIZE REQUIREMENTS (MODEL 1)
+# ---------------------------------------------------------
+def extract_clean_requirements(raw_text: str) -> str:
+    prompt = f"""
+You are a senior QA analyst.
 
-        Format your response as:
-        Feature: [Feature name]
+Extract and normalize functional requirements from the text below.
+Remove noise, explanations, and formatting issues.
+Keep only behavior-relevant requirements.
 
-        Scenario: [Scenario name]
-            Given [precondition]
-            When [action]
-            Then [expected result]
-        """
-    )
+TEXT:
+{raw_text}
+"""
 
-    prompt = prompt_template.format(requirements_text=requirements_text)
+    response = draft_model.invoke(prompt)
+    return response.content.strip()
+
+# ---------------------------------------------------------
+# STEP 3: GENERATE STRICT BDD (MODEL 2)
+# ---------------------------------------------------------
+def generate_bdd_from_requirements(requirements: str) -> str:
+    prompt = BDD_STYLE_PROMPT.format(requirements=requirements)
     response = refine_model.invoke(prompt)
+    return response.content.strip()
 
-    if hasattr(response, 'content'):
-        return response.content
-    else:
-        return str(response)
-
-
+# ---------------------------------------------------------
+# MAIN
+# ---------------------------------------------------------
 if __name__ == "__main__":
-    # Input for the tool
-    user_story_input = "Generate BDD test cases from PDF"
-
-    # Directly call the tool
     try:
-        #result = generate_single_bdd_test_case_from_pdf(user_story_input)
-        result = generate_bdd_test_cases_from_pdf(user_story_input)
-        print("📄 Generated BDD Test Cases from PDF:\n")
-        print(result)
+        print("📄 Reading requirements from PDF...")
+        raw_requirements = load_requirements_from_pdf()
+
+        print("🤖 Model 1: Normalizing requirements...")
+        clean_requirements = extract_clean_requirements(raw_requirements)
+
+        print("🤖 Model 2: Generating STRICT BDD scenarios...")
+        bdd_output = generate_bdd_from_requirements(clean_requirements)
+
+        print("\n🎉 GENERATED BDD SCENARIOS:\n")
+        print(bdd_output)
+
     except Exception as e:
-        print(f"Error occurred: {e}")
+        print(f"❌ Error: {e}")
