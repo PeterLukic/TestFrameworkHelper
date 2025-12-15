@@ -1,8 +1,0 @@
-Feature: Orange HRM Login
-
-  Scenario: Successful Login with Demo Credentials
-    Given The OrangeHRM login page is displayed
-    When I enter "Admin" into the Username field
-    And I enter "admin123" into the Password field
-    And I click the "Login" button
-    Then the current page URL should contain "/dashboard"

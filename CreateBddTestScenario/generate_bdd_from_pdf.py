@@ -8,9 +8,14 @@ from langchain_community.document_loaders import UnstructuredPDFLoader
 # PATHS
 # ---------------------------------------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 DOCS_DIR = os.path.join(BASE_DIR, "Docs")
+OUTPUT_DIR = os.path.join(BASE_DIR, "Output")
 
 PDF_FILE = os.path.join(DOCS_DIR, "LoginDocumentation.pdf")
+OUTPUT_FILE = os.path.join(OUTPUT_DIR, "GeneratedBDD_FromPdf.feature")
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # ---------------------------------------------------------
 # LLM MODELS
@@ -29,7 +34,7 @@ refine_model = ChatOllama(
 )
 
 # ---------------------------------------------------------
-# UNIVERSAL BDD PROMPT (YOUR CONTRACT)
+# UNIVERSAL BDD PROMPT (STYLE CONTRACT)
 # ---------------------------------------------------------
 BDD_STYLE_PROMPT = """
 You are a Behavior-Driven Development (BDD) expert.
@@ -73,7 +78,7 @@ def load_requirements_from_pdf() -> str:
 
     raw_text = "\n\n".join(doc.page_content.strip() for doc in docs)
 
-    # Keep prompt-safe size
+    # Prompt-safe size
     return raw_text[:3000]
 
 # ---------------------------------------------------------
@@ -84,7 +89,7 @@ def extract_clean_requirements(raw_text: str) -> str:
 You are a senior QA analyst.
 
 Extract and normalize functional requirements from the text below.
-Remove noise, explanations, and formatting issues.
+Remove noise, explanations, formatting artifacts, and duplicates.
 Keep only behavior-relevant requirements.
 
 TEXT:
@@ -118,6 +123,11 @@ if __name__ == "__main__":
 
         print("\n🎉 GENERATED BDD SCENARIOS:\n")
         print(bdd_output)
+
+        with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+            f.write(bdd_output)
+
+        print(f"\n💾 BDD saved to: {OUTPUT_FILE}\n")
 
     except Exception as e:
         print(f"❌ Error: {e}")
