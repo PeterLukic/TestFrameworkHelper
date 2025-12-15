@@ -1,0 +1,592 @@
+import { Page } from 'playwright';
+import { PageLogin } from './PageLogin';
+import { PageDashboard } from './PageDashboard';
+import { PageAdminUserManager } from './PageAdminUserManager';
+import { PageAdminAddUser } from './PageAdminAddUser';
+
+export class PageManager {
+    private readonly page: Page;
+    private readonly pageLogin: PageLogin;
+    private readonly pageDashboard: PageDashboard;
+    private readonly pageAdminUserManager: PageAdminUserManager;
+    private readonly pageAdminAddUser: PageAdminAddUser;
+
+    constructor(page: Page) {
+        this.page = page;
+        this.pageLogin = new PageLogin(page);
+        this.pageDashboard = new PageDashboard(page);
+        this.pageAdminUserManager = new PageAdminUserManager(page);
+        this.pageAdminAddUser = new PageAdminAddUser(page);
+    }
+
+    getPageLogin(): PageLogin {
+        return this.pageLogin;
+    }
+
+    getPageDashboard(): PageDashboard {
+        return this.pageDashboard;
+    }
+
+    getPageAdminUserManager(): PageAdminUserManager {
+        return this.pageAdminUserManager;
+    }
+
+    getPageAdminAddUser(): PageAdminAddUser {
+        return this.pageAdminAddUser;
+    }
+}
+
+import { Page, Locator, expect } from '@playwright/test';
+
+export class PageLogin {
+    // Locators
+    readonly page: Page;
+    readonly usernameInput: Locator;
+    readonly passwordInput: Locator;
+    readonly loginButton: Locator;
+    readonly loginTitle: Locator;
+    readonly demoCredentials: Locator;
+    readonly forgotPasswordLink: Locator;
+    readonly socialAuthButton: Locator;
+    readonly errorMessage: Locator;
+    readonly csrfToken: Locator;
+
+    constructor(page: Page) {
+        this.page = page;
+        this.usernameInput = page.locator('input[name="username"]');
+        this.passwordInput = page.locator('input[name="password"]');
+        this.loginButton = page.locator('button[type="submit"]:has-text("Login")');
+        this.loginTitle = page.locator('h5.orangehrm-login-title');
+        this.demoCredentials = page.locator('.orangehrm-demo-credentials');
+        this.forgotPasswordLink = page.locator('.orangehrm-login-forgot-header');
+        this.socialAuthButton = page.locator('.orangehrm-auth-button');
+        this.errorMessage = page.locator('p.oxd-text.oxd-text--p.oxd-alert-content-text');
+        this.csrfToken = page.locator('input[name="_token"]');
+    }
+
+
+    /**
+     * Navigate to the OrangeHRM login page
+    */
+    async goto(url: string): Promise<void> {
+        await this.page.goto(url);
+    }
+
+    /**
+     * Wait for page to load completely
+    */
+    async waitForPageLoad(): Promise<void> {
+        await this.page.waitForLoadState('networkidle');
+        await expect(this.loginTitle).toBeVisible();
+    }
+
+    // Form Actions
+    async fillUsername(username: string): Promise<void> {
+        await this.usernameInput.fill(username);
+    }
+
+    async fillPassword(password: string): Promise<void> {
+        await this.passwordInput.fill(password);
+    }
+
+    async clickButtonLogin(): Promise<void> {
+        await this.loginButton.click();
+    }
+
+    async clearInputs(): Promise<void> {
+        await this.usernameInput.clear();
+        await this.passwordInput.clear();
+    }
+
+    async clickForgotPassword(): Promise<void> {
+        await this.forgotPasswordLink.click();
+    }
+
+    async clickSocialAuth(): Promise<void> {
+        await this.socialAuthButton.click();
+    }
+
+    // Composite Actions
+    async loginWithCredentials(username: string, password: string): Promise<void> {
+        await this.fillUsername(username);
+        await this.fillPassword(password);
+        await this.clickButtonLogin();
+    }
+
+    async loginWithDemoCredentials(): Promise<void> {
+        await this.loginWithCredentials('Admin', 'admin123');
+    }
+
+    // Verification Methods
+    async isLoginPageLoaded(): Promise<boolean> {
+        await expect(this.loginTitle).toBeVisible();
+        await expect(this.usernameInput).toBeVisible();
+        await expect(this.passwordInput).toBeVisible();
+        await expect(this.loginButton).toBeVisible();
+        return true;
+    }
+
+    async verifyPageTitle(): Promise<void> {
+        await expect(this.page).toHaveTitle('OrangeHRM');
+    }
+
+    async verifyLoginTitle(): Promise<void> {
+        await expect(this.loginTitle).toHaveText('Login');
+    }
+
+    async verifyDemoCredentialsVisible(): Promise<void> {
+        await expect(this.demoCredentials).toBeVisible();
+        await expect(this.demoCredentials).toContainText('Username : Admin');
+        await expect(this.demoCredentials).toContainText('Password : admin123');
+    }
+
+    async verifyAllElementsPresent(): Promise<void> {
+        await expect(this.usernameInput).toBeVisible();
+        await expect(this.passwordInput).toBeVisible();
+        await expect(this.loginButton).toBeVisible();
+        await expect(this.loginTitle).toBeVisible();
+        await expect(this.demoCredentials).toBeVisible();
+        await expect(this.forgotPasswordLink).toBeVisible();
+    }
+
+    // Error Handling
+    async isErrorMessageVisible(): Promise<boolean> {
+        return await this.errorMessage.isVisible();
+    }
+
+    async getErrorMessageText(): Promise<string> {
+        return await this.errorMessage.textContent() || '';
+    }
+
+    async assertErrorMessage(expectedText: string): Promise<void> {
+        await expect(this.errorMessage).toBeVisible();
+        await expect(this.errorMessage).toHaveText(expectedText);
+    }
+
+    // Utility Methods
+    async getDemoCredentialsText(): Promise<string> {
+        return await this.demoCredentials.textContent() || '';
+    }
+
+    async isLoginButtonEnabled(): Promise<boolean> {
+        return await this.loginButton.isEnabled();
+    }
+
+    async getUsernamePlaceholder(): Promise<string> {
+        return await this.usernameInput.getAttribute('placeholder') || '';
+    }
+
+    async getPasswordPlaceholder(): Promise<string> {
+        return await this.passwordInput.getAttribute('placeholder') || '';
+    }
+
+    async getCsrfToken(): Promise<string> {
+        return await this.csrfToken.getAttribute('value') || '';
+    }
+}
+
+import { Page, Locator, expect } from '@playwright/test';
+
+export class PageDashboard {
+    readonly page: Page;
+    readonly titleDashboard: Locator;
+    readonly tableTimeAtWork: Locator;
+    readonly tableMyActions: Locator;
+    readonly tableQuickLaunch: Locator;
+    readonly tableBuzzLatestPosts: Locator;
+    readonly tableEmployeeDistributionBySubUnit: Locator;
+    readonly tableEmployeeDistributionByLocation: Locator;
+
+
+    constructor(page: Page) {
+        this.page = page;
+        this.titleDashboard = page.locator('h6.oxd-text--h6.oxd-topbar-header-breadcrumb-module');
+        this.tableTimeAtWork = page.locator('p.oxd-text.oxd-text--p', { hasText: 'Time at Work' });
+        this.tableMyActions = page.locator('p.oxd-text.oxd-text--p', { hasText: 'My Actions' });
+        this.tableQuickLaunch = page.locator('p.oxd-text.oxd-text--p', { hasText: 'Quick Launch' });
+        this.tableBuzzLatestPosts = page.locator('p.oxd-text.oxd-text--p', { hasText: 'Buzz Latest Posts' });
+        this.tableEmployeeDistributionBySubUnit = page.locator('p.oxd-text.oxd-text--p', { hasText: 'Employee Distribution by Sub Unit' });
+        this.tableEmployeeDistributionByLocation = page.locator('p.oxd-text.oxd-text--p', { hasText: 'Employee Distribution by Location' });
+
+    }
+
+    /**
+     * Assert that the dashboard page is loaded and all key widgets are visible with correct text.
+    */
+    async assertDashboardPage(): Promise<void> {
+        await expect(this.titleDashboard).toHaveText('Dashboard');
+
+        await expect(this.tableTimeAtWork).toBeVisible();
+        await expect(this.tableTimeAtWork).toHaveText('Time at Work');
+
+        await expect(this.tableMyActions).toBeVisible();
+        await expect(this.tableMyActions).toHaveText('My Actions');
+
+        await expect(this.tableQuickLaunch).toBeVisible();
+        await expect(this.tableQuickLaunch).toHaveText('Quick Launch');
+
+        await expect(this.tableEmployeeDistributionBySubUnit).toBeVisible();
+        await expect(this.tableEmployeeDistributionBySubUnit).toHaveText('Employee Distribution by Sub Unit');
+
+        await expect(this.tableEmployeeDistributionByLocation).toBeVisible();
+        await expect(this.tableEmployeeDistributionByLocation).toHaveText('Employee Distribution by Location');
+    }
+}
+
+import { Page, Locator, expect } from '@playwright/test';
+import { NewUserData } from './PageAdminAddUser';
+
+export class PageAdminUserManager {
+    readonly page: Page;
+    readonly inputUsername: Locator;
+    readonly dropDownUserRole: Locator;
+    readonly inputEmployeeName: Locator;
+    readonly dropDownStatus: Locator;
+    readonly buttonReset: Locator;
+    readonly buttonSearch: Locator;
+    readonly buttonAdd: Locator;
+    readonly tableRows: Locator;
+    readonly tableCells: Locator;
+    readonly labelNoRecordsMessage: Locator;
+    readonly buttonDeleteSelected: Locator;
+    readonly buttonYesDelete: Locator;
+
+    constructor(page: Page) {
+        this.page = page;
+        this.inputUsername = page.locator("//div[@class='oxd-input-group oxd-input-field-bottom-space']//div//input[@class='oxd-input oxd-input--active']");
+        this.dropDownUserRole = page.locator("//body/div[@id='app']/div[@class='oxd-layout orangehrm-upgrade-layout']/div[@class='oxd-layout-container']/div[@class='oxd-layout-context']/div[@class='orangehrm-background-container']/div[@class='oxd-table-filter']/div[@class='oxd-table-filter-area']/form[@class='oxd-form']/div[@class='oxd-form-row']/div[@class='oxd-grid-4 orangehrm-full-width-grid']/div[2]/div[1]/div[2]/div[1]/div[1]");
+        this.inputEmployeeName = page.locator("//input[@placeholder='Type for hints...']");
+        this.dropDownStatus = page.locator("//div[@class='oxd-select-text-input' and normalize-space()='-- Select --']");
+        this.buttonReset = page.locator("//button[@type='reset' and normalize-space()='Reset']");
+        this.buttonSearch = page.locator("//button[@type='submit']");
+        this.buttonAdd = page.locator("//button[normalize-space()='Add']");
+        this.tableRows = page.locator('.oxd-table-body .oxd-table-row');
+        this.tableCells = this.tableRows.first().locator('.oxd-table-cell');
+        this.labelNoRecordsMessage = page.locator("//span[normalize-space()='No Records Found']");
+        this.buttonDeleteSelected = page.locator("//button[normalize-space()='Delete Selected']");
+        this.buttonYesDelete = page.getByRole('button', { name: 'Yes, Delete' });
+    }
+
+    // Navigation
+    /**
+     * Navigate to the OrangeHRM Admin User Management page
+     */
+    async navigateToAdminUserManagement(url: string): Promise<void> {
+        await this.page.goto(url);
+    }
+
+    /**
+    * Verify that the Admin User Manager page has loaded successfully
+    */
+    async verifypageAdminUserManager() {
+        await this.page.waitForURL('**/viewSystemUsers', { timeout: 10000 });
+        await this.page.waitForLoadState('networkidle');
+    }
+
+    // Form Fillers
+    /**
+     * Fill the username input field with the provided username
+     * @param username - The username to fill in the input field
+     */
+    async fillUsername(username: string) {
+        await this.inputUsername.fill(username);
+    }
+
+    /**
+     * Fill the username input field with the provided username from user data
+     * @param user - The user data containing the username
+     */
+    async fillUsernameFromUserData(user: NewUserData) {
+        await this.inputUsername.fill(user.username);
+    }
+
+    /**
+     * Fill the employee name input field with the provided name
+     * @param name - The name of the employee to fill in the input field
+     */
+    async fillEmployeeName(name: string) {
+        await this.inputEmployeeName.fill(name);
+
+        // Wait for the suggestions to appear
+        const suggestion = this.page.locator(`//div[@role='listbox']//span[normalize-space()='${name}']`);
+        await suggestion.waitFor({ state: 'visible' });
+        await suggestion.click();
+    }
+
+    // Dropdown Selectors
+    /** 
+    // Select a user role from the dropdown
+    * @param roleText - The text of the user role to select
+    */
+    async selectUserRole(roleText: string) {
+        await this.dropDownUserRole.click();
+        await this.page.locator(`//div[@role='listbox']//span[normalize-space()='${roleText}']`).click();
+    }
+
+    /**
+     * Select a status from the dropdown
+     * @param statusText - The text of the status to select
+     */
+    async selectStatus(statusText: string) {
+        await this.dropDownStatus.click();
+        await this.page.locator(`//div[@role='listbox']//span[normalize-space()='${statusText}']`).click();
+    }
+
+    // Actions
+    /**
+    * Click the search button to submit the search form
+    */
+    async clickSearch() {
+        await this.buttonSearch.click();
+        await this.page.waitForLoadState('networkidle');
+    }
+
+    /**
+    * Click the reset button to submit the search form 
+    */
+    async clickReset() {
+        await this.buttonReset.click();
+    }
+
+    /**
+     * Click the add button to navigate to the user creation page
+     */
+
+    async clickButtonAdd() {
+        await this.buttonAdd.click();
+    }
+
+    /**
+     * Click the delete selected button to delete selected users
+     */
+    async clickButtonDeleteSelected() {
+        await this.buttonDeleteSelected.click();
+    }
+
+    /**
+     * Click the "Yes, Delete" button to confirm deletion of selected users
+     */
+    async clickButtonYesDelete() {
+        await this.buttonYesDelete.click();
+        await this.page.waitForLoadState('networkidle');
+
+    }
+
+    // Verification
+    /**
+     *  Verify that the search results contain a single row with the expected values
+     *  This method is used to verify that the search results contain a single row with the expected values.
+     *  It checks the count of rows in the search results and verifies that the values in
+     * @param expected - Expected values for the single search result
+     */
+    async verifySingleSearchResult(expected: {
+        username: string;
+        userRole: string;
+        employeeName?: string;
+        status: string;
+    }) {
+        await expect(this.tableRows).toHaveCount(1);
+
+        await expect(this.tableCells.nth(1)).toHaveText(expected.username);
+        await expect(this.tableCells.nth(2)).toHaveText(expected.userRole);
+        // Optionally check employeeName if provided
+        if (expected.employeeName) {
+            await expect(this.tableCells.nth(3)).toHaveText(expected.employeeName);
+        }
+        await expect(this.tableCells.nth(4)).toHaveText(expected.status);
+    }
+
+    async verifyUserDataInTable(expected: NewUserData) {
+        await expect(this.tableRows).toHaveCount(1);
+        await expect(this.tableCells.nth(1)).toHaveText(expected.username);
+        await expect(this.tableCells.nth(2)).toHaveText(expected.role);
+        // Optionally check employeeName if needed
+        // await expect(this.tableCells.nth(3)).toHaveText(expected.employeeName);
+        await expect(this.tableCells.nth(4)).toHaveText(expected.status);
+    }
+
+    /**
+     * Verify that there are no search results
+     */
+    async verifyNoSearchResults() {
+        await expect(this.tableRows).toHaveCount(0);
+        await expect(this.labelNoRecordsMessage).toBeVisible();
+        await expect(this.labelNoRecordsMessage).toHaveText('No Records Found');
+    }
+
+    // Table Actions
+    /**
+    * Click the checkbox in the table row where the employee name matches the given value
+    * @param name - The name of the employee to match (e.g., "Perica")
+    */
+    async clickTableCheckboxByName(name: string) {
+        const rowLocator = this.page.locator(`//div[@role='row' and .//div[text()='${name}']]`);
+        await rowLocator.waitFor({ state: 'visible' });
+
+        // Click the span that is styled to look like a checkbox
+        const styledCheckbox = rowLocator.locator('.oxd-checkbox-input');
+        await styledCheckbox.click({ force: true });
+    }
+}
+
+import { Page, Locator } from '@playwright/test';
+
+
+export type NewUserData = {
+    role: string;
+    employeeName: string;
+    status: string;
+    username: string;
+    password: string;
+};
+
+export class PageAdminAddUser {
+    readonly page: Page;
+    readonly dropDownUserRole: Locator;
+    readonly inputEmployeeName: Locator;
+    readonly dropDownStatus: Locator;
+    readonly inputUsername: Locator;
+    readonly inputPassword: Locator;
+    readonly inputConfirmPassword: Locator;
+    readonly buttonSave: Locator;
+    readonly buttonCancel: Locator;
+
+
+    constructor(page: Page) {
+        this.page = page;
+        this.dropDownUserRole = page.locator("//label[text()='User Role']/ancestor::div[contains(@class,'oxd-input-group')]//div[contains(@class,'oxd-select-text-input') and text()='-- Select --']");
+        this.inputEmployeeName = page.locator("//input[@placeholder='Type for hints...']");
+        this.dropDownStatus = page.locator("//label[text()='Status']/ancestor::div[contains(@class,'oxd-input-group')]//div[contains(@class,'oxd-select-text-input') and normalize-space()='-- Select --']");
+        this.inputUsername = page.locator("(//input[@class='oxd-input oxd-input--active'])[2]");
+        this.inputPassword = page.locator("(//input[@type='password'])[1]");
+        this.inputConfirmPassword = page.locator("(//input[@type='password'])[2]");
+        this.buttonSave = page.locator("(//button[normalize-space()='Save'])[1]");
+        this.buttonCancel = page.locator("//button[normalize-space()='Cancel']");
+    }
+
+    // Navigation
+    /**
+     * Navigate to the OrangeHRM Admin User Management page
+     * @param url - The URL to navigate to the OrangeHRM Admin User Management page
+    */
+    async navigateToAdminUserManagement(url: string) {
+        await this.page.goto(url);
+    }
+
+    // Form Fillers
+    /**
+     * Fill the username input field with the provided username
+     * @param username - The username to fill in the input field
+    */
+    async fillUsername(username: string) {
+        await this.inputUsername.fill(username);
+    }
+
+    /**
+     * Fill the password input field with the provided password
+     * @param password - The password to fill in the input field
+    */
+    async fillPassword(password: string) {
+        await this.inputPassword.fill(password);
+    }
+
+    /**
+     * Fill the confirm password input field with the provided password
+     * @param confirmPassword - The password to fill in the confirm password input field
+    */
+    async fillConfirmPassword(confirmPassword: string) {
+        await this.inputConfirmPassword.fill(confirmPassword);
+    }
+
+    /**
+    * Fill the employee name input field with the provided name
+    * @param name - The name of the employee to fill in the input field
+    */
+    async fillEmployeeName(name: string) {
+        await this.inputEmployeeName.fill(name);
+
+        const suggestionList = this.page.locator("//div[@role='listbox']");
+        await suggestionList.waitFor({ state: 'visible', timeout: 5000 });
+
+        const suggestions = suggestionList.locator('span');
+        const count = await suggestions.count();
+
+        for (let i = 0; i < count; i++) {
+            console.log('Suggestion:', await suggestions.nth(i).textContent());
+        }
+
+        const suggestion = suggestionList.locator(`span:has-text("${name}")`);
+        await suggestion.waitFor({ state: 'visible', timeout: 5000 });
+        await suggestion.click();
+    }
+
+    /**
+ * Fill the employee name input field with the provided name
+ * and select the first suggestion from the list
+ * @param name - The name of the employee to fill in the input field
+ */
+    async fillFirstSuggestionEmployeeName(name: string) {
+        await this.inputEmployeeName.fill(name);
+
+        const suggestionList = this.page.locator("//div[@role='listbox']");
+        await suggestionList.waitFor({ state: 'visible', timeout: 5000 });
+
+        const suggestions = suggestionList.locator('span');
+        const firstSuggestion = suggestions.first();
+        await firstSuggestion.waitFor({ state: 'visible', timeout: 5000 });
+
+        console.log('First suggestion:', await firstSuggestion.textContent());
+        await firstSuggestion.click();
+    }
+
+    // Dropdown Selectors
+    /**
+     * Select a user role from the dropdown
+     * @param role - The user role to select from the dropdown
+    */
+    async selectUserRole(role: string) {
+        await this.dropDownUserRole.click();
+        await this.page.locator(`.oxd-select-dropdown .oxd-select-option:has-text("${role}")`).click();
+    }
+
+    /**
+     * Select a status from the dropdown
+     * @param status  - The status to select from the dropdown
+    */
+    async selectStatus(status: string) {
+        await this.dropDownStatus.click();
+        await this.page.locator(`.oxd-select-dropdown .oxd-select-option:has-text("${status}")`).click();
+    }
+
+    // Actions
+    /**
+     * Click the search button to submit the search form
+    */
+    async clickButtonSave() {
+        await this.buttonSave.click();
+        await this.page.waitForLoadState('networkidle');
+    }
+
+    /**
+     * Click the cancel button to discard changes
+    */
+    async clickButtonCancel() {
+        await this.buttonCancel.click();
+
+    }
+
+    /**
+    * Fill the Add User form with the provided user data and save
+    * @param user - An object containing all the necessary user details
+    */
+    async addNeUser(user: NewUserData) {
+        await this.selectUserRole(user.role);
+        await this.fillFirstSuggestionEmployeeName(user.employeeName);
+        await this.selectStatus(user.status);
+        await this.fillUsername(user.username);
+        await this.fillPassword(user.password);
+        await this.fillConfirmPassword(user.password);
+        await this.clickButtonSave();
+    }
+}
+

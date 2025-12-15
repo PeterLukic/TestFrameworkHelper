@@ -7,18 +7,12 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_ollama import ChatOllama
 
 # ---------------------------------------------------------
-# LLM CONFIGURATION (2 MODELS)
+# LLM CONFIGURATION
 # ---------------------------------------------------------
-draft_llm = ChatOllama(
-    model="gpt-oss:120b-cloud",
-    base_url="http://localhost:11434",
-    temperature=0.25
-)
-
-refine_llm = ChatOllama(
+llm = ChatOllama(
     model="deepseek-v3.1:671b-cloud",
     base_url="http://localhost:11434",
-    temperature=0.1
+    temperature=0.15
 )
 
 # ---------------------------------------------------------
@@ -33,29 +27,50 @@ def infer_class_name(file_path: str) -> str:
     return "Page" + "".join(w.capitalize() for w in words)
 
 # ---------------------------------------------------------
-# DRAFT PROMPT (STRUCTURE + COVERAGE)
+# UNIVERSAL BDD-DRIVEN POM PROMPT
 # ---------------------------------------------------------
-draft_prompt = PromptTemplate(
+pom_prompt = PromptTemplate(
     input_variables=["class_name", "page_description", "mode"],
     template="""
 You are a Senior QA Automation Engineer.
 
-Generate a COMPLETE Playwright Page Object Model (POM) in TypeScript.
+Generate a Playwright Page Object Model (POM) in TypeScript
+that STRICTLY follows BDD-compatible architecture rules.
 
-GOALS:
-- Identify all meaningful locators
-- Create action, composite, verification, and utility methods
-- Follow clean Playwright architecture
+STRICT RULES (MANDATORY):
 
-RULES:
-- Use page.locator()
-- Semantic camelCase names
-- Verb-first method naming
-- Output ONLY TypeScript code
-- No markdown, no comments, no explanations
+1. Naming:
+   - Page class name: {class_name}
+   - camelCase methods
+   - verb-first naming
 
-CLASS NAME:
-{class_name}
+2. Method structure:
+   - Navigation methods (goto, navigateToX)
+   - Action methods (fillUsername, clickLoginButton)
+   - Composite methods (loginWithCredentials)
+   - Verification methods (verify..., assert...)
+   - Boolean helpers (is..., get...)
+
+3. Encapsulation:
+   - All locators MUST be private
+   - No raw locators exposed
+   - No assertions inside action methods
+
+4. Verification rules:
+   - Soft checks → verify...
+   - Hard expectations → assert...
+
+5. Output rules:
+   - Output ONLY TypeScript code
+   - NO markdown
+   - NO comments
+   - NO explanations
+   - Ready to paste into a real Playwright project
+
+6. Locator rules:
+   - Use page.locator()
+   - Semantic camelCase names
+   - Extract inputs, buttons, links, messages, errors
 
 MODE:
 {mode}
@@ -64,43 +79,12 @@ PAGE CONTENT:
 {page_description}
 
 OUTPUT:
-Generate a full Playwright Page Object class.
+Generate ONE Playwright Page Object class.
 """
 )
 
 # ---------------------------------------------------------
-# REFINEMENT PROMPT (STRICT BDD + ENTERPRISE RULES)
-# ---------------------------------------------------------
-refine_prompt = PromptTemplate(
-    input_variables=["draft_code", "class_name"],
-    template="""
-You are a Principal QA Architect.
-
-Refine the following Playwright Page Object Model to STRICTLY comply with
-BDD-driven enterprise standards.
-
-MANDATORY RULES:
-- Class name MUST be {class_name}
-- camelCase, verb-first methods
-- Private locators only
-- No assertions inside action methods
-- verify... = soft checks
-- assert... = hard expectations
-- No raw locator exposure
-- No navigation mixed with verification
-- Output ONLY TypeScript code
-- No comments, no markdown, no explanations
-
-CODE TO REFINE:
-{draft_code}
-
-OUTPUT:
-Return the corrected, production-ready Playwright POM.
-"""
-)
-
-# ---------------------------------------------------------
-# INPUT / OUTPUT
+# INPUT FILE
 # ---------------------------------------------------------
 INPUT_FILE = "./Docs/Login.txt"
 OUTPUT_DIR = "./Output"
@@ -117,31 +101,23 @@ mode = "HTML mode" if "<" in page_description and ">" in page_description else "
 class_name = infer_class_name(INPUT_FILE)
 
 # ---------------------------------------------------------
-# PIPELINE
+# EXECUTION PIPELINE
 # ---------------------------------------------------------
+chain = pom_prompt | llm | StrOutputParser()
 
-# Step 1: Draft generation
-draft_chain = draft_prompt | draft_llm | StrOutputParser()
-draft_code = draft_chain.invoke({
+generated_code = chain.invoke({
     "class_name": class_name,
     "page_description": page_description,
     "mode": mode
 })
 
-# Step 2: Refinement
-refine_chain = refine_prompt | refine_llm | StrOutputParser()
-final_code = refine_chain.invoke({
-    "draft_code": draft_code,
-    "class_name": class_name
-})
-
 # ---------------------------------------------------------
-# CLEANUP SAFETY NET
+# CLEANUP (SAFETY NET)
 # ---------------------------------------------------------
 for banned in ["```", "###", "**", "Explanation", "analysis", "markdown"]:
-    final_code = final_code.replace(banned, "")
+    generated_code = generated_code.replace(banned, "")
 
-final_code = final_code.strip()
+generated_code = generated_code.strip()
 
 # ---------------------------------------------------------
 # OUTPUT
@@ -149,8 +125,8 @@ final_code = final_code.strip()
 output_file = os.path.join(OUTPUT_DIR, f"{class_name}.ts")
 
 with open(output_file, "w", encoding="utf-8") as f:
-    f.write(final_code)
+    f.write(generated_code)
 
-print("\n✅ Playwright POM generated successfully (2-model pipeline):\n")
-print(final_code)
+print("\n✅ Playwright POM generated successfully:\n")
+print(generated_code)
 print(f"\n💾 Saved to: {output_file}\n")

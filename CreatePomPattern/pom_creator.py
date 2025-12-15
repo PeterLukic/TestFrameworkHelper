@@ -6,133 +6,128 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_ollama import ChatOllama
 
-# --- LLM Configuration ---
+# ---------------------------------------------------------
+# LLM CONFIGURATION
+# ---------------------------------------------------------
 llm = ChatOllama(
     model="deepseek-v3.1:671b-cloud",
     base_url="http://localhost:11434",
-    temperature=0.2
+    temperature=0.15
 )
 
-# --- Extract a useful class name from filename (optional enhancement) ---
+# ---------------------------------------------------------
+# CLASS NAME INFERENCE
+# ---------------------------------------------------------
 def infer_class_name(file_path: str) -> str:
-    raw = os.path.basename(file_path).replace(".txt", "").lower()
+    raw = os.path.basename(file_path).replace(".txt", "")
     raw = re.sub(r'[^a-zA-Z0-9]', ' ', raw)
     words = raw.split()
     if not words:
-        return "GeneratedPage"
-    return "".join(w.capitalize() for w in words) + "Page"
+        return "PageGenerated"
+    return "Page" + "".join(w.capitalize() for w in words)
 
-
-# --- UNIVERSAL POM PROMPT TEMPLATE ---
+# ---------------------------------------------------------
+# UNIVERSAL BDD-DRIVEN POM PROMPT
+# ---------------------------------------------------------
 pom_prompt = PromptTemplate(
-    input_variables=["page_description", "mode", "class_name"],
+    input_variables=["class_name", "page_description", "mode"],
     template="""
-You are an expert QA Automation Engineer specializing in building enterprise-grade Playwright automation frameworks.
+You are a Senior QA Automation Engineer.
 
-Your task: **Generate a complete and production-ready Playwright Page Object Model (POM) class in TypeScript**.
+Generate a Playwright Page Object Model (POM) in TypeScript
+that STRICTLY follows BDD-compatible architecture rules.
 
-### STRICT REQUIREMENTS:
-- Output **ONLY TypeScript code**.
-- No markdown, no comments, no explanations, no backticks.
-- Use this class name: {class_name}
-- The structure MUST follow this exact high-quality template:
+STRICT RULES (MANDATORY):
 
-==================================================
-import {{ Page, Locator, expect }} from '@playwright/test';
+1. Naming:
+   - Page class name: {class_name}
+   - camelCase methods
+   - verb-first naming
 
-export class {class_name} {{
-    readonly page: Page;
+2. Method structure:
+   - Navigation methods (goto, navigateToX)
+   - Action methods (fillUsername, clickLoginButton)
+   - Composite methods (loginWithCredentials)
+   - Verification methods (verify..., assert...)
+   - Boolean helpers (is..., get...)
 
-    // Locators
-    // (Auto-generate all relevant locators)
+3. Encapsulation:
+   - All locators MUST be private
+   - No raw locators exposed
+   - No assertions inside action methods
 
-    constructor(page: Page) {{
-        this.page = page;
+4. Verification rules:
+   - Soft checks → verify...
+   - Hard expectations → assert...
 
-        // Initialize all locators using page.locator()
-    }}
+5. Output rules:
+   - Output ONLY TypeScript code
+   - NO markdown
+   - NO comments
+   - NO explanations
+   - Ready to paste into a real Playwright project
 
-    async goto(url: string): Promise<void> {{
-        await this.page.goto(url);
-    }}
+6. Locator rules:
+   - Use page.locator()
+   - Semantic camelCase names
+   - Extract inputs, buttons, links, messages, errors
 
-    async waitForPageLoad(): Promise<void> {{
-        await this.page.waitForLoadState('networkidle');
-    }}
-
-    // Form Actions
-    // (fill, click, clear, select, uploads, shortcuts, etc.)
-
-    // Composite Actions
-    // (Multi-step user flows)
-
-    // Verification Methods
-    // (isVisible, verifyText, verifyTitle, verifyElementPresent)
-
-    // Utility Methods
-    // (getText, getValue, isEnabled, getPlaceholder, etc.)
-}}
-==================================================
-
-### Requirements for generated POM:
-1. All locators must use **page.locator()**.
-2. Locator names must be **semantic camelCase**.
-3. Extract all inputs, buttons, links, labels, headings, icons, errors, messages.
-4. Build meaningful helper methods for:
-   - Form actions
-   - Clicks & fills
-   - Composite actions (login, submitForm, search, saveChanges, etc.)
-   - Verification methods (visibility, text match, enabled state)
-   - Utility accessors (getText, getValue, getPlaceholder)
-5. The code must be **ready to copy-paste into a real Playwright project**.
-6. No extra explanations. Only clean TypeScript code.
-
-### Mode:
+MODE:
 {mode}
 
-### Page or HTML Content:
+PAGE CONTENT:
 {page_description}
 
-Generate the full POM now:
+OUTPUT:
+Generate ONE Playwright Page Object class.
 """
 )
 
-# --- Load HTML or description ---
-file_path = "./Docs/LoginPom.txt"
-if not os.path.exists(file_path):
-    raise FileNotFoundError(f"{file_path} not found.")
+# ---------------------------------------------------------
+# INPUT FILE
+# ---------------------------------------------------------
+INPUT_FILE = "./Docs/Login.txt"
+OUTPUT_DIR = "./Output"
 
-with open(file_path, "r", encoding="utf-8") as f:
+if not os.path.exists(INPUT_FILE):
+    raise FileNotFoundError(f"{INPUT_FILE} not found")
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+with open(INPUT_FILE, "r", encoding="utf-8") as f:
     page_description = f.read()
 
-mode = "HTML mode" if ("<" in page_description and ">" in page_description) else "Description mode"
-class_name = infer_class_name(file_path)
+mode = "HTML mode" if "<" in page_description and ">" in page_description else "Description mode"
+class_name = infer_class_name(INPUT_FILE)
 
-# --- Chain Pipeline ---
+# ---------------------------------------------------------
+# EXECUTION PIPELINE
+# ---------------------------------------------------------
 chain = pom_prompt | llm | StrOutputParser()
 
-generated_pom = chain.invoke({
+generated_code = chain.invoke({
+    "class_name": class_name,
     "page_description": page_description,
-    "mode": mode,
-    "class_name": class_name
+    "mode": mode
 })
 
-# --- Cleanup (remove markdown or mistakes) ---
-bad_patterns = ["```", "**", "###", "analysis", "summary", "markdown", "Explanation", "* "]
-cleaned = []
-for line in generated_pom.splitlines():
-    if not any(b in line for b in bad_patterns):
-        cleaned.append(line)
+# ---------------------------------------------------------
+# CLEANUP (SAFETY NET)
+# ---------------------------------------------------------
+for banned in ["```", "###", "**", "Explanation", "analysis", "markdown"]:
+    generated_code = generated_code.replace(banned, "")
 
-generated_pom = "\n".join(cleaned).strip()
+generated_code = generated_code.strip()
 
-# --- Output ---
-print("\n✅ Generated Playwright POM:\n")
-print(generated_pom)
+# ---------------------------------------------------------
+# OUTPUT
+# ---------------------------------------------------------
+output_file = os.path.join(OUTPUT_DIR, f"{class_name}.ts")
 
-# --- Save to file ---
-output_path = f"./Generated_{class_name}.ts"
-with open(output_path, "w", encoding="utf-8") as f:
-    f.write(generated_pom)
+with open(output_file, "w", encoding="utf-8") as f:
+    f.write(generated_code)
 
-print(f"\n💾 POM saved to {output_path}\n")
+print("\n✅ Playwright POM generated successfully:\n")
+print(generated_code)
+print(f"\n💾 Saved to: {output_file}\n")
+
