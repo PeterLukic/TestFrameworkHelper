@@ -1,0 +1,226 @@
+Based on the comprehensive patterns and rules you've provided, I'll generate universal BDD step definitions that strictly adhere to your framework. Here's a complete implementation:
+
+## **NAVIGATION STEPS**
+
+```typescript
+import { Given, When } from '@cucumber/cucumber';
+import { PageManager } from '../page-objects/page-manager';
+import { PageAdminUserManager } from '../page-objects/page-admin-user-manager';
+import { PageLogin } from '../page-objects/page-login';
+
+// Page Object Accessors
+const pageAdminUserManager = (pageManager: PageManager): PageAdminUserManager => 
+  pageManager.getPageAdminUserManager();
+
+const pageLogin = (pageManager: PageManager): PageLogin => 
+  pageManager.getPageLogin();
+
+Given('I navigate to the Admin User Management page', async ({ pageManager }) => {
+  await pageAdminUserManager(pageManager).navigateToAdminUserManagement();
+});
+
+Given('I navigate to the Login page', async ({ pageManager }) => {
+  await pageLogin(pageManager).navigateToLogin();
+});
+```
+
+## **ACTION STEPS (Given/When)**
+
+```typescript
+import { Given, When } from '@cucumber/cucumber';
+import { getStoredUserData } from '../utils/user-data-helper';
+
+When('I fill the username input field with {string}', async ({ pageManager }, username: string) => {
+  await pageAdminUserManager(pageManager).fillUsername(username);
+});
+
+When('I fill the username input field with New Random User', async ({ pageManager }) => {
+  const userData = getStoredUserData();
+  await pageAdminUserManager(pageManager).fillUsername(userData.username);
+});
+
+When('I select {string} as the user role', async ({ pageManager }, userRole: string) => {
+  await pageAdminUserManager(pageManager).selectUserRole(userRole);
+});
+
+When('I select {string} as the status', async ({ pageManager }, status: string) => {
+  await pageAdminUserManager(pageManager).selectStatus(status);
+});
+
+When('I click the Search button', async ({ pageManager }) => {
+  await pageAdminUserManager(pageManager).clickSearch();
+});
+
+When('I click the Add User button', async ({ pageManager }) => {
+  await pageAdminUserManager(pageManager).clickAddUser();
+});
+
+When('I click the checkbox for user {string}', async ({ pageManager }, username: string) => {
+  await pageAdminUserManager(pageManager).clickCheckboxForUser(username);
+});
+
+When('I click the Delete Selected button', async ({ pageManager }) => {
+  await pageAdminUserManager(pageManager).clickDeleteSelected();
+});
+
+When('I confirm the deletion in the dialog', async ({ pageManager }) => {
+  await pageAdminUserManager(pageManager).clickButtonYesDelete();
+});
+```
+
+## **VERIFICATION STEPS (Then/And)**
+
+```typescript
+import { Then, And } from '@cucumber/cucumber';
+import { DataTable } from '@cucumber/cucumber';
+
+Then('I verify that the search result contains:', async ({ pageManager }, dataTable: DataTable) => {
+  const expectedData = dataTable.rowsHash();
+  await pageAdminUserManager(pageManager).verifySingleSearchResult(expectedData);
+});
+
+Then('I verify that multiple search results contain:', async ({ pageManager }, dataTable: DataTable) => {
+  const expectedResults = dataTable.hashes();
+  await pageAdminUserManager(pageManager).verifyMultipleSearchResults(expectedResults);
+});
+
+Then('I verify that no search results are found', async ({ pageManager }) => {
+  await pageAdminUserManager(pageManager).verifyNoSearchResults();
+});
+
+Then('I should see a message indicating that no records were found', async ({ pageManager }) => {
+  await pageAdminUserManager(pageManager).shouldSeeNoRecordsMessage();
+});
+
+Then('I should see a success message for user creation', async ({ pageManager }) => {
+  await pageAdminUserManager(pageManager).shouldSeeUserCreationSuccess();
+});
+
+Then('I should see a success message for user deletion', async ({ pageManager }) => {
+  await pageAdminUserManager(pageManager).shouldSeeUserDeletionSuccess();
+});
+
+Then('I should be redirected to the User Management page', async ({ pageManager }) => {
+  await pageAdminUserManager(pageManager).shouldBeRedirectedToUserManagement();
+});
+
+And('I verify that the user {string} is present in the results', async ({ pageManager }, username: string) => {
+  await pageAdminUserManager(pageManager).verifyUserPresent(username);
+});
+
+And('I verify that the user {string} is not present in the results', async ({ pageManager }, username: string) => {
+  await pageAdminUserManager(pageManager).verifyUserNotPresent(username);
+});
+```
+
+## **LOGIN-SPECIFIC STEPS**
+
+```typescript
+import { When, Then } from '@cucumber/cucumber';
+
+When('I fill the email input field with {string}', async ({ pageManager }, email: string) => {
+  await pageLogin(pageManager).fillEmail(email);
+});
+
+When('I fill the password input field with {string}', async ({ pageManager }, password: string) => {
+  await pageLogin(pageManager).fillPassword(password);
+});
+
+When('I click the Login button', async ({ pageManager }) => {
+  await pageLogin(pageManager).clickLogin();
+});
+
+Then('I should be redirected to the Dashboard page', async ({ pageManager }) => {
+  await pageLogin(pageManager).shouldBeRedirectedToDashboard();
+});
+
+Then('I should see an authentication error message', async ({ pageManager }) => {
+  await pageLogin(pageManager).shouldSeeAuthenticationError();
+});
+```
+
+## **SUPPORTING UTILITIES**
+
+```typescript
+// utils/user-data-helper.ts
+let storedUserData: any = null;
+
+export const storeUserData = (userData: any): void => {
+  storedUserData = userData;
+};
+
+export const getStoredUserData = (): any => {
+  if (!storedUserData) {
+    throw new Error('No user data has been stored');
+  }
+  return storedUserData;
+};
+
+// fixtures/context.ts
+export interface FixtureContext {
+  pageManager: PageManager;
+}
+```
+
+## **PAGE OBJECT INTERFACE EXAMPLES**
+
+```typescript
+// page-objects/page-admin-user-manager.ts
+export interface PageAdminUserManager {
+  // Navigation
+  navigateToAdminUserManagement(): Promise<void>;
+  
+  // Actions
+  fillUsername(username: string): Promise<void>;
+  selectUserRole(role: string): Promise<void>;
+  selectStatus(status: string): Promise<void>;
+  clickSearch(): Promise<void>;
+  clickAddUser(): Promise<void>;
+  clickCheckboxForUser(username: string): Promise<void>;
+  clickDeleteSelected(): Promise<void>;
+  clickButtonYesDelete(): Promise<void>;
+  
+  // Verifications
+  verifySingleSearchResult(expectedData: Record<string, string>): Promise<void>;
+  verifyMultipleSearchResults(expectedResults: any[]): Promise<void>;
+  verifyNoSearchResults(): Promise<void>;
+  shouldSeeNoRecordsMessage(): Promise<void>;
+  shouldSeeUserCreationSuccess(): Promise<void>;
+  shouldSeeUserDeletionSuccess(): Promise<void>;
+  shouldBeRedirectedToUserManagement(): Promise<void>;
+  verifyUserPresent(username: string): Promise<void>;
+  verifyUserNotPresent(username: string): Promise<void>;
+}
+```
+
+## **USAGE EXAMPLES IN FEATURE FILES**
+
+```gherkin
+# Navigation and Setup
+Given I navigate to the Admin User Management page
+
+# Data Entry Actions  
+When I fill the username input field with "testuser"
+When I select "Admin" as the user role
+When I select "Enabled" as the status
+
+# Button Interactions
+When I click the Search button
+When I click the Add User button
+
+# Verification Steps
+Then I verify that the search result contains:
+  | username | testuser |
+  | role     | Admin    |
+  | status   | Enabled  |
+
+Then I should see a success message for user creation
+```
+
+These step definitions strictly follow your patterns:
+- **1:1 mapping** to page object methods
+- **Single responsibility** per step
+- **Semantic parameter names** (`{string}` placeholders only)
+- **Domain language** without UI selectors
+- **Clean separation** of actions vs verifications
+- **Reusable patterns** across different scenarios

@@ -1,0 +1,214 @@
+import { Given, When, Then } from '../../support/fixtures';
+import { PageManager } from '../../../pageobjects/PageManager';
+import { PageAdminUserManager } from '../../../pageobjects/PageAdminUserManager';
+import { getStoredUserData } from '../../steps/ui/stepsAdminAddUser';
+import data from '../../../utils/data.json';
+
+type FixtureContext = {
+    pageManager: PageManager;
+};
+
+const pageAdminUserManager = (pageManager: PageManager): PageAdminUserManager => pageManager.getPageAdminUserManager();
+
+Given('I navigate to the Admin User Management page', async ({ pageManager }: FixtureContext) => {
+    await pageAdminUserManager(pageManager).navigateToAdminUserManagement(data.ui.url + "web/index.php/admin/viewSystemUsers");
+})
+When('I fill the username input field with {string}', async ({ pageManager }: FixtureContext, username: string) => {
+    await pageAdminUserManager(pageManager).fillUsername(username);
+})
+
+
+Then('I fill the username input field with New Randndom User', async ({ pageManager }: FixtureContext) => {
+    const storedUser = getStoredUserData();
+    if (!storedUser || !storedUser.username) {
+        throw new Error("Stored user data is missing or incomplete.");
+    }
+    await pageAdminUserManager(pageManager).fillUsername(storedUser.username);
+})
+
+
+When('I select {string} as the user role', async ({ pageManager }: FixtureContext, userRole: string) => {
+    await pageAdminUserManager(pageManager).selectUserRole(userRole);
+})
+
+When('I enter {string} as the employee name', async ({ pageManager }: FixtureContext, employeeName: string) => {
+    await pageAdminUserManager(pageManager).fillEmployeeName(employeeName);
+})
+
+Given('I select {string} as the status', async ({ pageManager }: FixtureContext) => {
+    await pageAdminUserManager(pageManager).selectStatus("Enabled");
+})
+
+Given('I click the Search button', async ({ pageManager }: FixtureContext) => {
+    await pageAdminUserManager(pageManager).clickSearch();
+    
+})
+
+Then('I verify that the search result contains:', async ({ pageManager }: FixtureContext, dataTable) => {
+    const expected = dataTable.rowsHash();
+    await pageAdminUserManager(pageManager).verifySingleSearchResult({
+        username: expected.username,
+        userRole: expected.userRole,
+        employeeName: expected.employeeName,
+        status: expected.status
+    });
+})
+
+Then('I verify If random user is added', async ({ pageManager }: FixtureContext)  => {
+    const storedUser = getStoredUserData();
+    if (!storedUser) {
+        throw new Error("Stored user data is missing or incomplete.");
+    }
+    await pageAdminUserManager(pageManager).verifyUserDataInTable(storedUser);
+    console.log('Verified user data in table:', storedUser);
+})
+
+
+
+Then('I should see a message indicating that no records were found', async ({ pageManager }: FixtureContext) => {
+    await pageAdminUserManager(pageManager).verifyNoSearchResults();
+})
+
+Then('I click the Add User button', async ({ pageManager }: FixtureContext) => {
+    await pageAdminUserManager(pageManager).clickButtonAdd();
+})
+
+Then('I should be redirected to the page admin user managment', async ({ pageManager }: FixtureContext) => {
+    await pageAdminUserManager(pageManager).verifypageAdminUserManager();
+})
+
+Then('I click the checkbox for user {string}', async ({ pageManager }: FixtureContext, userName: string)  => {
+     await pageAdminUserManager(pageManager).clickTableCheckboxByName(userName);
+})
+
+Then('I click the Delete Selected button', async ({ pageManager }: FixtureContext) => {
+  await pageAdminUserManager(pageManager).clickButtonDeleteSelected();
+})
+
+Then('I confirm the deletion in the dialog', async ({ pageManager }: FixtureContext) => {
+    await pageAdminUserManager(pageManager).clickButtonYesDelete();
+})
+
+import { When, Then } from '../../support/fixtures';
+import { PageManager } from '../../../pageobjects/PageManager';
+import { PageLogin } from '../../../pageobjects/PageLogin';
+import data from '../../../utils/data.json';
+
+type FixtureContext = {
+    pageManager: PageManager;
+};
+
+const pageLogin = (pageManager: PageManager): PageLogin => pageManager.getPageLogin();
+
+When('I enter username {string}', async ({ pageManager }: FixtureContext, userName: string) => {
+    await pageLogin(pageManager).fillUsername(userName);
+});
+
+When('I enter password {string}', async ({ pageManager }: FixtureContext, password: string) => {
+    await pageLogin(pageManager).fillPassword(password);
+})
+
+When('I click the login button', async ({ pageManager }: FixtureContext) => {
+    await pageLogin(pageManager).clickButtonLogin();
+})
+
+When('I login with the demo credentials', async ({ pageManager }: FixtureContext, userName: string, password: string) => {
+    await pageLogin(pageManager).loginWithCredentials(data.ui.username, data.ui.password);
+})
+
+Then('I should see an error message', async ({ pageManager }: FixtureContext) => {
+    await pageLogin(pageManager).assertErrorMessage("Invalid credentials");
+})
+
+import { Then } from '../../support/fixtures';
+import { PageManager } from '../../../pageobjects/PageManager';
+import { PageDashboard } from '../../../pageobjects/PageDashboard';
+
+type FixtureContext = {
+    pageManager: PageManager;
+};
+
+
+const pagDashboard = (pageManager: PageManager): PageDashboard => pageManager.getPageDashboard();
+
+Then('I should be redirected to the page dashboard', async ({ pageManager }: FixtureContext) => {
+    await pagDashboard(pageManager).assertDashboardPage();
+})
+
+import { Given, When, Then } from '../../support/fixtures';
+import data from '../../../utils/data.json';
+import { PageManager } from '../../../pageobjects/PageManager';
+import { PageLogin } from '../../../pageobjects/PageLogin';
+
+type FixtureContext = {
+    pageManager: PageManager;
+};
+
+const pageLogin = (pageManager: PageManager): PageLogin => pageManager.getPageLogin();
+
+Given('I navigate to the OrangeHRM login page', async ({ pageManager }: FixtureContext) => {
+    await pageLogin(pageManager).goto(data.ui.url);
+})
+
+
+Given('the login page is loaded successfully', async ({ pageManager }: FixtureContext) => {
+    await pageLogin(pageManager).isLoginPageLoaded();
+})
+
+import { Then } from '../../support/fixtures';
+import { PageManager } from '../../../pageobjects/PageManager';
+import { PageAdminAddUser } from '../../../pageobjects/PageAdminAddUser';
+import { generateRandomUser, UserModel } from '../../../utils/randomUser';
+
+import data from '../../../utils/data.json';
+
+let storedUserData: UserModel | null = null;
+
+type FixtureContext = {
+    pageManager: PageManager;
+};
+
+const pageAdminAddUser = (pageManager: PageManager): PageAdminAddUser => pageManager.getPageAdminAddUser();
+
+Then('I select {string} as the new user role', async ({ pageManager }: FixtureContext, userRole: string) => {
+    await pageAdminAddUser(pageManager).selectUserRole(userRole);
+})
+
+Then('I enter {string} as the new employee name', async ({ pageManager }: FixtureContext, employeeName: string) => {
+    await pageAdminAddUser(pageManager).fillEmployeeName(employeeName);
+})
+
+Then('I enter {string} as the new first suggestion employee name', async ({ pageManager }: FixtureContext, employeeName: string) => {
+    await pageAdminAddUser(pageManager).fillFirstSuggestionEmployeeName(employeeName);
+})
+
+Then('I select {string} as the new status', async ({ pageManager }: FixtureContext, status: string) => {
+    await pageAdminAddUser(pageManager).selectStatus(status);
+})
+
+Then('I enter new username from data json file', async ({ pageManager }: FixtureContext) => {
+    await pageAdminAddUser(pageManager).fillUsername(data.ui.newUser.username);
+})
+
+Then('I enter new password from data json file', async ({ pageManager }: FixtureContext) => {
+    await pageAdminAddUser(pageManager).fillPassword(data.ui.newUser.password);
+})
+
+Then('I confirm new password from data json file', async ({ pageManager }: FixtureContext) => {
+    await pageAdminAddUser(pageManager).fillConfirmPassword(data.ui.newUser.confirmPassword);
+})
+
+Then('I click the Save button', async ({ pageManager }: FixtureContext) => {
+    await pageAdminAddUser(pageManager).clickButtonSave();
+})
+
+Then('I add a new admin user with random data', async ({ pageManager }: FixtureContext) => {
+    const userData = generateRandomUser();
+    storedUserData = userData;
+    console.log('Generated user data:', userData);
+    await pageAdminAddUser(pageManager).addNeUser(userData);
+})
+
+export const getStoredUserData = (): UserModel | null => storedUserData;
+
+
