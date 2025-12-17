@@ -10,6 +10,7 @@ TestFrameworkHelper is an AI-powered test automation toolkit that generates:
 - **BDD Test Scenarios** (Gherkin format) from PDF documentation or HTML
 - **Page Object Models** (TypeScript/Playwright) from HTML structure or descriptions
 - **Cucumber Step Definitions** from BDD scenarios and POM files
+- **Universal Prompts** for consistent test artifact generation
 
 ---
 
@@ -224,10 +225,17 @@ TestFrameworkHelper/
 ├── CreateSteps/
 │   ├── Docs/
 │   │   ├── BddLoginScenario.txt             # BDD scenarios for steps
+│   │   ├── ExistingSteps.txt                # Example step definitions
+│   │   ├── GeneratedBDD_FromHtml.feature    # Sample feature file
+│   │   ├── PageLogin.ts                     # Page Object reference
 │   │   └── PomLogin.txt                     # POM for step generation
+│   ├── Output/
+│   │   └── UniversalStepsPrompt.txt         # Steps prompt template
 │   ├── Steps/
 │   │   └── GeneratedLoginSteps.ts           # Generated output
-│   └── generate_bdd_login_steps.py          # Step definition generator
+│   ├── generate_bdd_login_steps.py          # Step definition generator
+│   ├── generate_steps_from_feature_and_pom.py  # Feature+POM → Steps
+│   └── generate_universal_steps_prompt.py   # Universal steps template
 ├── Installation/
 │   └── INSTALLATION.md                      # This file
 └── requirements.txt                         # Python dependencies
@@ -257,6 +265,16 @@ python generate_bdd_from_html.py
 **Input:** `Docs/HtmlStructure.txt`  
 **Output:** `Output/GeneratedBDD_FromHtml.feature`
 
+### Generate Login BDD Scenarios
+
+```bash
+cd CreateBddTestScenario
+python generate_bdd_login.py
+```
+
+**Input:** `Docs/LoginDocumentation.pdf`  
+**Output:** Console output (Gherkin scenarios)
+
 ### Generate Page Object Model
 
 ```bash
@@ -267,6 +285,16 @@ python pom_creator.py
 **Input:** `Docs/Login.txt`  
 **Output:** `Output/PageLogin.ts`
 
+### Generate POM with Universal Prompt
+
+```bash
+cd CreatePomPattern
+python generate_pom_prompt.py
+```
+
+**Input:** `Docs/Login.txt`  
+**Output:** `Output/PageLogin.ts` (with strict BDD compliance)
+
 ### Generate Cucumber Step Definitions
 
 ```bash
@@ -276,6 +304,26 @@ python generate_bdd_login_steps.py
 
 **Input:** `Docs/BddLoginScenario.txt` + `Docs/PomLogin.txt`  
 **Output:** `Steps/GeneratedLoginSteps.ts`
+
+### Generate Steps from Feature + POM
+
+```bash
+cd CreateSteps
+python generate_steps_from_feature_and_pom.py
+```
+
+**Input:** `Docs/GeneratedBDD_FromHtml.feature` + `Docs/PageLogin.ts`  
+**Output:** `Output/GeneratedSteps.ts`
+
+### Generate Universal Steps Prompt
+
+```bash
+cd CreateSteps
+python generate_universal_steps_prompt.py
+```
+
+**Input:** `Docs/ExistingSteps.txt`  
+**Output:** `Output/UniversalStepsPrompt.txt`
 
 ---
 
@@ -376,17 +424,58 @@ pip install --upgrade unstructured
    ollama pull gpt-oss:120b-cloud
    ```
 
-3. **Test BDD generation:**
+3. **Test BDD generation from PDF:**
    ```bash
    cd CreateBddTestScenario
    python generate_bdd_login.py
    ```
 
-4. **Test POM generation:**
+4. **Test BDD generation from HTML:**
+   ```bash
+   cd CreateBddTestScenario
+   python generate_bdd_from_html.py
+   ```
+
+5. **Test POM generation:**
    ```bash
    cd ../CreatePomPattern
    python pom_creator.py
    ```
+
+6. **Test Step generation:**
+   ```bash
+   cd ../CreateSteps
+   python generate_bdd_login_steps.py
+   ```
+
+---
+
+## 📚 Complete Script Reference
+
+### CreateBddTestScenario Scripts
+
+| Script | Purpose | Input | Output |
+|--------|---------|-------|--------|
+| `generate_bdd_from_pdf.py` | Generate BDD from PDF requirements | `Docs/LoginDocumentation.pdf` | `Output/GeneratedBDD_FromPdf.feature` |
+| `generate_bdd_from_html.py` | Generate BDD from HTML structure | `Docs/HtmlStructure.txt` | `Output/GeneratedBDD_FromHtml.feature` |
+| `generate_bdd_login.py` | Generate login BDD scenarios | `Docs/LoginDocumentation.pdf` | Console output |
+| `generate_bdd_template.py` | Generate BDD with template | `Docs/Login.txt` | `Output/PageLogin.ts` |
+| `BddTestCaseCreator.ipynb` | Interactive BDD generation | Notebook cells | Console output |
+
+### CreatePomPattern Scripts
+
+| Script | Purpose | Input | Output |
+|--------|---------|-------|--------|
+| `pom_creator.py` | Generate basic POM | `Docs/Login.txt` | `Output/PageLogin.ts` |
+| `generate_pom_prompt.py` | Generate POM with universal prompt | `Docs/Login.txt` | `Output/PageLogin.ts` |
+
+### CreateSteps Scripts
+
+| Script | Purpose | Input | Output |
+|--------|---------|-------|--------|
+| `generate_bdd_login_steps.py` | Generate steps from BDD+POM | `Docs/BddLoginScenario.txt` + `Docs/PomLogin.txt` | `Steps/GeneratedLoginSteps.ts` |
+| `generate_steps_from_feature_and_pom.py` | Generate steps from feature+POM | `Docs/GeneratedBDD_FromHtml.feature` + `Docs/PageLogin.ts` | `Output/GeneratedSteps.ts` |
+| `generate_universal_steps_prompt.py` | Generate universal steps template | `Docs/ExistingSteps.txt` | `Output/UniversalStepsPrompt.txt` |
 
 ---
 
@@ -397,7 +486,26 @@ pip install --upgrade unstructured
 The project uses a **two-model pipeline** approach:
 
 1. **Draft Model** (`gpt-oss:120b-cloud`): Fast, creative generation
+   - Used for: Initial analysis, requirement extraction, pattern recognition
+   - Temperature: 0.25-0.3
+
 2. **Refine Model** (`deepseek-v3.1:671b-cloud`): Strict formatting and validation
+   - Used for: Final output generation, strict compliance checking
+   - Temperature: 0.1-0.2
+
+### Model Usage by Script
+
+| Script | Draft Model | Refine Model |
+|--------|-------------|--------------|
+| `generate_bdd_from_pdf.py` | `gpt-oss:120b-cloud` | `deepseek-v3.1:671b-cloud` |
+| `generate_bdd_from_html.py` | `gpt-oss:120b-cloud` | `deepseek-v3.1:671b-cloud` |
+| `generate_bdd_login.py` | - | `gpt-oss:120b-cloud` |
+| `pom_creator.py` | - | `deepseek-v3.1:671b-cloud` |
+| `generate_pom_prompt.py` | - | `deepseek-v3.1:671b-cloud` |
+| `generate_bdd_template.py` | `gpt-oss:120b-cloud` | `deepseek-v3.1:671b-cloud` |
+| `generate_bdd_login_steps.py` | `gpt-oss:120b-cloud` | `deepseek-v3.1:671b-cloud` |
+| `generate_steps_from_feature_and_pom.py` | `gpt-oss:120b-cloud` | `deepseek-v3.1:671b-cloud` |
+| `generate_universal_steps_prompt.py` | `gpt-oss:120b-cloud` | `deepseek-v3.1:671b-cloud` |
 
 You can modify model selection in each script:
 
@@ -415,8 +523,27 @@ refine_model = ChatOllama(
 
 ### Temperature Settings
 
-- **0.1-0.2**: Strict, deterministic output (refinement)
-- **0.3-0.5**: Balanced creativity and consistency (drafting)
+- **0.1-0.15**: Maximum determinism (POM generation, final refinement)
+- **0.2**: Strict formatting (BDD refinement, step definitions)
+- **0.25-0.3**: Balanced creativity (analysis, pattern extraction)
+- **0.5**: Higher creativity (Jupyter notebooks, experimentation)
+
+### Script-Specific Configuration
+
+#### BDD Generation Scripts
+- **Text limit**: 2000-3000 characters from input
+- **Prompt strategy**: Two-stage (analyze → generate)
+- **Output format**: Pure Gherkin syntax
+
+#### POM Generation Scripts
+- **Mode detection**: Automatic HTML vs Description mode
+- **Class naming**: Auto-inferred from input filename
+- **Output cleanup**: Removes markdown artifacts automatically
+
+#### Step Generation Scripts
+- **Context type**: `FixtureContext` with `PageManager`
+- **Import structure**: Fixed fixture-based imports
+- **Method mapping**: Strict 1:1 POM method validation
 
 ---
 

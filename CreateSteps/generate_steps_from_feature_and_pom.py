@@ -92,9 +92,6 @@ You MUST strictly follow this framework contract.
 - NEVER import from '@cucumber/cucumber'
 - NEVER import expect from Playwright
 
-Example:
-import { Given, When, Then } from '../../support/fixtures';
-
 2. Context Injection
 - ALL steps MUST use fixture-based injection
 - Arrow functions ONLY
@@ -103,18 +100,25 @@ MANDATORY signature:
 async ({ pageManager }: FixtureContext, ...params) => { }
 
 3. FixtureContext
-Assume this type exists:
+Assume this type exists and MUST be used:
 type FixtureContext = {
   pageManager: PageManager;
 };
 
-4. Page Object Access
-- NEVER access Page Objects statically
-- ALWAYS use accessor functions
+4. Page Object Access (VERY IMPORTANT)
+- Page Object accessor functions MUST be declared ONCE at top-level
+- Example (MANDATORY pattern):
 
-Example:
 const pageLogin = (pageManager: PageManager): PageLogin =>
   pageManager.getPageLogin();
+
+- NEVER declare page objects inside steps
+- NEVER assign page objects to local variables inside steps
+- ALWAYS call page objects using:
+  pageLogin(pageManager).methodName()
+
+❌ FORBIDDEN:
+const pageLogin = pageManager.getPageLogin();
 
 5. Method Usage
 - Use ONLY methods that exist in the Page Object
@@ -152,6 +156,7 @@ STEP MAPPING SPECIFICATION:
 Generate STRICT, framework-compliant step definitions now.
 """
 
+
 # ---------------------------------------------------------
 # PIPELINE
 # ---------------------------------------------------------
@@ -170,12 +175,15 @@ def generate_steps() -> str:
     ).content.strip()
 
     print("🤖 Model 2: Generating STRICT step definitions...")
-    generate_prompt = PromptTemplate.from_template(GENERATE_STEPS_PROMPT)
+
+    # 🚨 CRITICAL FIX: NEVER use .format() with LLM output
+    safe_prompt = GENERATE_STEPS_PROMPT.replace("{analysis}", analysis)
+
     steps_code = refine_model.invoke(
-        generate_prompt.format(analysis=analysis)
+        safe_prompt
     ).content.strip()
 
-    # Safety cleanup
+    # Safety cleanup (extra protection)
     for banned in ["```", "Explanation", "analysis", "markdown"]:
         steps_code = steps_code.replace(banned, "")
 
