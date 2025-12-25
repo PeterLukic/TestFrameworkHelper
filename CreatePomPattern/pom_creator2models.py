@@ -10,6 +10,15 @@ from langchain_ollama import ChatOllama
 # LLM CONFIGURATION
 # ---------------------------------------------------------
 
+## FULL LOCAL : 
+#ANALYZE → qwen2.5:14b or 32b
+#GENERATE → qwen2.5-coder:14b or 32b
+
+##BEST QUALITY
+#ANALYZE → deepseek-v3.1 (cloud)
+#GENERATE → qwen2.5-coder (local)
+
+
 # Model 1 → HTML / Description ANALYSIS (reasoning)
 analyze_llm = ChatOllama(
     #model="deepseek-v3.1:671b-cloud",
